@@ -83,7 +83,13 @@ jobs:
 
   build:
     needs: version
-    if: github.event_name != 'pull_request'
+    # Gated by the IMAGE_BUILD_ENABLED repo variable so the Docker
+    # build + ACR push stays dormant until the product is ready to
+    # publish. Flip to `true` in repo Settings → Variables when the
+    # infra repo is provisioned (the deploy dispatch downstream is
+    # also gated by INFRA_DISPATCH_ENABLED — see ADR-010). PR builds
+    # are always skipped regardless of the variable, same as before.
+    if: github.event_name != 'pull_request' && vars.IMAGE_BUILD_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
