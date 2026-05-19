@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Scale, ArrowRight } from "lucide-react";
-import { Chip } from "@/components/ui/chip";
+import { InitiativeChip } from "@/components/initiative-chip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import type { MatrixJurisdictionBand } from "@/lib/portal-data";
@@ -128,12 +128,7 @@ export function RoadmapMatrix({
                             </span>
                           ) : (
                             row.cells[bucket].map((i) => (
-                              <Chip
-                                key={i.id}
-                                bucket={bucket}
-                                label={i.title}
-                                hint={i.description ?? i.title}
-                              />
+                              <InitiativeChip key={i.id} initiative={i} />
                             ))
                           )}
                         </div>
