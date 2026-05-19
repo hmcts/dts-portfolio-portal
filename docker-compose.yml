@@ -1,0 +1,65 @@
+# Local development stack for the DTS Portfolio Portal.
+#
+# Default usage:
+#   pnpm dev                  # run Next.js on host, with `db` from compose
+#   docker compose up -d db   # just start the database
+#   docker compose --profile tools up -d pgadmin   # add pgAdmin on demand
+#
+# Full-container mode (the image the production host runs):
+#   docker compose --profile app up --build
+#
+# The `app` service is gated behind a profile so day-to-day dev uses
+# `pnpm dev` for HMR — the docker app service exists for parity smokes
+# and CI-equivalent local runs.
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: portal-db
+    environment:
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: portal
+      POSTGRES_DB: portal
+    ports:
+      - "5432:5432"
+    volumes:
+      - portal-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal -d portal"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: portal-pgadmin
+    profiles: ["tools"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@portal.local
+      PGADMIN_DEFAULT_PASSWORD: portal
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: "0.0.0-dev"
+    container_name: portal-app
+    profiles: ["app"]
+    environment:
+      DATABASE_URL: "postgresql://portal:portal@db:5432/portal?schema=public"
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  portal-db-data:

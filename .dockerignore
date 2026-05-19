@@ -1,0 +1,27 @@
+node_modules
+.next
+out
+build
+dist
+.git
+.github
+.vscode
+.idea
+
+# tests + reports
+coverage
+test-results
+playwright-report
+playwright/.cache
+
+# secrets / env
+.env
+.env.*
+!.env.example
+
+# docs and prototype (the running image doesn't need these)
+docs
+
+# OS
+.DS_Store
+Thumbs.db
