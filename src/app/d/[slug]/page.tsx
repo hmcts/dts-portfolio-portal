@@ -7,8 +7,10 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { StatusPill } from "@/components/ui/status-pill";
+import { ProductCardModal } from "@/components/product-card-modal";
 import {
   getDomainBySlug,
+  getInitiativesForProduct,
   getJurisdictionBySlug,
   getProductsForDomain,
   getTeamsForDomain,
@@ -115,34 +117,48 @@ export default async function DomainPage({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {products.map((p) => {
             const team = teams.find((t) => t.slug === p.operatingTeamSlug);
+            const initiatives = getInitiativesForProduct(p.id);
             return (
-              <Link key={p.slug} href={`/p/${p.slug}`} className="group">
-                <Card className="h-full transition-colors group-hover:border-[var(--color-border-strong)]">
-                  <Eyebrow className="mb-1.5">
-                    {jurisdiction!.name} · {domain.name}
-                  </Eyebrow>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="text-[15px] font-medium text-[var(--color-ink)]">
-                      {p.name}
-                    </div>
-                    <StatusPill
-                      tone={STAGE_TONE[p.stage]}
-                      icon={<CheckCircle2 size={12} aria-hidden="true" />}
-                      label={p.stage[0].toUpperCase() + p.stage.slice(1)}
-                    />
-                  </div>
-                  {p.description ? (
-                    <p className="mt-1.5 line-clamp-3 text-[13px] text-[var(--color-muted)]">
-                      {p.description}
-                    </p>
-                  ) : null}
-                  {team ? (
-                    <div className="mt-3 text-[12px] text-[var(--color-muted)]">
-                      Operated by {team.name}
-                    </div>
-                  ) : null}
-                </Card>
-              </Link>
+              <ProductCardModal
+                key={p.slug}
+                product={p}
+                domain={domain}
+                team={team}
+                initiatives={initiatives}
+                trigger={
+                  <button
+                    type="button"
+                    className="group block text-left"
+                    aria-label={`Open ${p.name} details`}
+                  >
+                    <Card className="h-full transition-colors group-hover:border-[var(--color-border-strong)]">
+                      <Eyebrow className="mb-1.5">
+                        {jurisdiction!.name} · {domain.name}
+                      </Eyebrow>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-[15px] font-medium text-[var(--color-ink)]">
+                          {p.name}
+                        </div>
+                        <StatusPill
+                          tone={STAGE_TONE[p.stage]}
+                          icon={<CheckCircle2 size={12} aria-hidden="true" />}
+                          label={p.stage[0].toUpperCase() + p.stage.slice(1)}
+                        />
+                      </div>
+                      {p.description ? (
+                        <p className="mt-1.5 line-clamp-3 text-[13px] text-[var(--color-muted)]">
+                          {p.description}
+                        </p>
+                      ) : null}
+                      {team ? (
+                        <div className="mt-3 text-[12px] text-[var(--color-muted)]">
+                          Operated by {team.name}
+                        </div>
+                      ) : null}
+                    </Card>
+                  </button>
+                }
+              />
             );
           })}
         </div>
