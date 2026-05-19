@@ -90,3 +90,49 @@ export function getProductsForDomain(domainSlug: string): Product[] {
 export function getTeamsForDomain(domainSlug: string): Team[] {
   return portalContent.teams.filter((t) => t.domainSlug === domainSlug);
 }
+
+export function getJurisdictionBySlug(slug: string): Jurisdiction | undefined {
+  return portalContent.jurisdictions.find((j) => j.slug === slug);
+}
+
+export function getDomainBySlug(slug: string): ProductDomain | undefined {
+  return portalContent.domains.find((d) => d.slug === slug);
+}
+
+export function getTeamBySlug(slug: string): Team | undefined {
+  return portalContent.teams.find((t) => t.slug === slug);
+}
+
+export function getProductBySlug(slug: string): Product | undefined {
+  return portalContent.products.find((p) => p.slug === slug);
+}
+
+export function getProductsForTeam(teamSlug: string): Product[] {
+  return portalContent.products.filter((p) => p.operatingTeamSlug === teamSlug);
+}
+
+export function getProductsConsumedBy(jurisdictionSlug: string): Product[] {
+  return portalContent.products.filter((p) =>
+    p.consumedBy.includes(jurisdictionSlug as Jurisdiction["slug"]),
+  );
+}
+
+export function getInitiativesForProduct(productId: string): Initiative[] {
+  return portalContent.initiatives.filter((i) => i.productId === productId);
+}
+
+export function getInitiativesForDomain(
+  domainSlug: string,
+): Record<"NOW" | "NEXT" | "LATER", Initiative[]> {
+  const productIds = new Set(
+    getProductsForDomain(domainSlug).map((p) => p.id),
+  );
+  const matching = portalContent.initiatives.filter((i) =>
+    productIds.has(i.productId),
+  );
+  return {
+    NOW: matching.filter((i) => i.bucket === "NOW"),
+    NEXT: matching.filter((i) => i.bucket === "NEXT"),
+    LATER: matching.filter((i) => i.bucket === "LATER"),
+  };
+}
