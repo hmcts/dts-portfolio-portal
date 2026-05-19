@@ -52,6 +52,9 @@ node_modules/
 .yarn/build-state.yml
 .yarn/unplugged
 
+# --- TypeScript ---
+*.tsbuildinfo
+
 # --- Build / dist (generic) ---
 dist/
 build/
