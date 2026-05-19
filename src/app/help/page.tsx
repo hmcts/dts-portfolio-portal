@@ -56,14 +56,14 @@ export default function HelpPage() {
               <p className="mt-1.5 text-[13px] text-[var(--color-muted)]">
                 {t.description}
               </p>
-              <button
-                type="button"
-                disabled
-                className="mt-3 inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--color-border)] bg-[var(--color-surface-sunk)] px-3 py-1.5 text-[13px] text-[var(--color-muted)]"
+              <a
+                href={`/templates/${t.slug}.md`}
+                download
+                className="mt-3 inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-[13px] text-[var(--color-ink)] hover:bg-[var(--color-surface-sunk)]"
               >
                 <Download size={12} aria-hidden="true" />
-                Phase 2 — coming soon
-              </button>
+                Download template
+              </a>
             </Card>
           ))}
         </div>
