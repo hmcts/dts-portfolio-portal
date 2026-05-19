@@ -78,7 +78,15 @@ export function parseIdentity(rawMarkdown: string): ParsedIdentity {
     throw new IdentityParseError(`Front-matter is not valid YAML: ${message}`);
   }
 
-  if (parsed.matter.trim() === "") {
+  // gray-matter behaviour quirk: on repeat calls with the same input
+  // string it returns an object whose `matter` field is undefined
+  // (the original `orig` field carries the original instead). Treat
+  // both shapes as a missing-front-matter sentinel and use `data`
+  // emptiness as the real signal that no front-matter was present.
+  if (
+    (parsed.matter == null || parsed.matter.trim() === "") &&
+    Object.keys(parsed.data as Record<string, unknown>).length === 0
+  ) {
     throw new IdentityParseError(
       "No YAML front-matter found. Every uploaded markdown file must start with a `---` delimited block declaring `type`, `name`, and a parent reference.",
     );
