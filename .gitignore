@@ -73,6 +73,11 @@ out/
 coverage/
 .nyc_output/
 
+# --- Playwright ---
+test-results/
+playwright-report/
+playwright/.cache/
+
 # --- Python (in case Phase 0 picks Python) ---
 __pycache__/
 *.py[cod]

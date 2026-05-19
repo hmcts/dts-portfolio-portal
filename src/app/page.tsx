@@ -11,7 +11,7 @@ export default function HomePage() {
         A high-level front door over Ardoq, Jira, and Confluence for HMCTS DTS.
         Scaffold up; pages land in subsequent commits.
       </p>
-      <p className="mt-12 text-sm text-[var(--color-ink-soft)]">
+      <p className="mt-12 text-sm text-[var(--color-ink-muted)]">
         Phase 1 foundation — see{" "}
         <code className="rounded bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[0.85em]">
           docs/superpowers/plans/2026-05-15-dts-portfolio-portal.md

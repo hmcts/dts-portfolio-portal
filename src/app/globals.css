@@ -7,18 +7,22 @@
    on its own — every status carries an icon or label. */
 
 @theme {
+  /* Colours tuned for WCAG 2.2 AA on the canvas: every foreground that
+     can appear as body text passes the 4.5:1 contrast ratio against the
+     canvas (#faf9f5). `ink-soft` is reserved for non-text uses or large
+     text (3:1) — never for body text. */
   --color-canvas: #faf9f5;
   --color-surface: #ffffff;
   --color-ink: #1a1a1a;
-  --color-ink-muted: #6b6b6b;
-  --color-ink-soft: #999999;
-  --color-hairline: #e8e6df;
+  --color-ink-muted: #595959;
+  --color-ink-soft: #767676;
+  --color-hairline: #d8d6cf;
 
-  --color-status-green: #2f7d3a;
-  --color-status-amber: #b3791d;
-  --color-status-red: #b04244;
-  --color-status-blue: #2a5fad;
-  --color-status-grey: #6b6b6b;
+  --color-status-green: #166534;
+  --color-status-amber: #92400e;
+  --color-status-red: #991b1b;
+  --color-status-blue: #1d4ed8;
+  --color-status-grey: #595959;
 
   --radius-card: 14px;
   --radius-pill: 9999px;
