@@ -4,22 +4,26 @@
 
 **Goal:** Deliver the DTS Portfolio Portal — a high-level "front door" over Ardoq / Jira / Confluence — in five shippable phases. Each phase produces working, demoable software.
 
-**Architecture:** Deferred to **Phase 0**. The source spec ([../specs/2026-05-15-dts-portfolio-portal-design.md](../specs/2026-05-15-dts-portfolio-portal-design.md)) intentionally leaves stack decisions open. Phase 0 produces ADRs for web framework, content store, AI parser, search backend, auth, and hosting. No code is written before Phase 0 signs off.
+**Architecture:** Decided at design level on 2026-05-19 (see [../specs/2026-05-19-azure-stack-design.md](../specs/2026-05-19-azure-stack-design.md)); ratified through **Phase 0** ADRs. The source requirements spec ([../specs/2026-05-15-dts-portfolio-portal-design.md](../specs/2026-05-15-dts-portfolio-portal-design.md)) deferred the stack; the stack-design spec captures the locked answers. Phase 0 now runs as a formal ADR sign-off pass rather than a fresh decision pass.
 
-**Tech Stack:** TBD in Phase 0. Probable shape (subject to ADR review): SSR web framework (Next.js App Router or Astro); Postgres for the spine + an append-only blob/table for source markdown; Azure OpenAI for markdown parsing and answer-card generation; Postgres full-text search; Azure Entra ID for auth; Azure App Service for hosting. Stack tracks HMCTS norms where they exist.
+**Tech Stack (locked):** Next.js (App Router) + React + TypeScript, containerised; Prisma + Azure Database for PostgreSQL Flexible Server (with Postgres full-text search); Azure OpenAI for markdown parsing and answer-card synthesis; Easy Auth → Microsoft Entra ID for authentication; Azure App Service for Linux (Web App for Containers) for hosting, image hosted in pre-provisioned HMCTS ACR (`hmctsprod.azurecr.io`); Azure Front Door for CDN + WAF; Azure Key Vault + managed identity for secrets; Application Insights + Log Analytics for observability. Build: pnpm, ESLint + Prettier, Vitest, Playwright, axe-core. Infra: Terraform (`infrastructure/` + `platform/` roots), all-GHA CI/CD (ADO deferred). See the stack-design spec for the full picture.
+
+**Repository topology:** Two repos. `hmcts/dts-portfolio-portal` (this repo) — **public** — carries app, Dockerfile, GHA workflows, docs. `hmcts/dts-portfolio-portal-infra` — **internal** (intent to publish) — carries Terraform and the deploy workflows triggered via cross-repo `repository_dispatch`.
 
 ---
 
 ## Plan altitude — read this first
 
-This plan operates **above the writing-plans skill's default code-and-test-snippet altitude**. The source spec intentionally defers architecture, so tasks below are described at the level of *"build this capability, verify it does X, this is the spec reference, these are the risks"* — not as TDD steps with exact file paths and `pytest`/`pnpm test` commands.
+This plan operates **above the writing-plans skill's default code-and-test-snippet altitude**. Tasks below are described at the level of *"build this capability, verify it does X, this is the spec reference, these are the risks"* — not as TDD steps with exact file paths and `pnpm test` commands.
 
-**To execute:** before starting any phase, refine its task list into TDD bite-sized tasks (matching the writing-plans default form) once the architecture decisions for that phase are locked. Phase 0 outputs are decision records, not code; Phases 1–5 each become their own concrete TDD plan after Phase 0.
+**To execute:** before starting any phase, refine its task list into TDD bite-sized tasks (matching the writing-plans default form). Phase 0 outputs are decision records, not code; Phases 1–5 each become their own concrete TDD plan after Phase 0 signs off. Now that the stack is locked (see the stack-design spec), this refinement is a mechanical step rather than a re-litigation.
 
 **Source documents:**
 - Requirements spec: [../specs/2026-05-15-dts-portfolio-portal-design.md](../specs/2026-05-15-dts-portfolio-portal-design.md)
-- Reference visual language: same spec, §6.6
-- Out-of-scope items: same spec, §3.2
+- Stack design spec: [../specs/2026-05-19-azure-stack-design.md](../specs/2026-05-19-azure-stack-design.md)
+- Reference visual language: requirements spec, §6.6
+- Out-of-scope items: requirements spec, §3.2
+- ADR index: [../../decisions/README.md](../../decisions/README.md)
 
 **Section references** (`§N.N`) in this plan point to the requirements spec above.
 
@@ -29,8 +33,8 @@ This plan operates **above the writing-plans skill's default code-and-test-snipp
 
 | Phase | What it delivers | Demo at end |
 |---|---|---|
-| **0. Architecture decisions** | ADRs for framework / store / AI / search / auth / hosting; project skeleton | Decision records committed; team sign-off |
-| **1. Scaffold + read-only seeded pages** | All six pages working with seeded data; modal-as-detail; visual language; Claude design pass | Click through the portal end-to-end with realistic seeded data |
+| **0. ADR sign-off** | Ten ADRs ratified from the stack-design spec (framework / store / AI / search / auth / hosting / visual / platform / repo-topology / deploy-pipeline) | ADRs committed, statuses moved Proposed → Accepted; team sign-off |
+| **1. Scaffold + read-only seeded pages** | All six pages working with seeded data; modal-as-detail; visual language; Claude design pass; containerised; CI green; deploy chain wired with infra dispatch disabled | Click through the portal end-to-end with realistic seeded data |
 | **2. Markdown upload + AI parse + approval** | Live data via markdown upload; approval screen; audit log | Upload a Team markdown, approve, see it live |
 | **3. Search** | Portal-wide NL search with instant overlay and deep results page | Ask *"who owns Common Platform?"* and get a one-sentence answer card |
 | **4. Auth integration** | Authenticated DTS staff only; team membership recognised | Sign in with Entra ID (or chosen provider); "Your team" shortcut wired up |
@@ -42,71 +46,74 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 
 ---
 
-# Phase 0 — Architecture decisions
+# Phase 0 — ADR sign-off
 
-**Goal:** Resolve every architecture question the spec defers, with options-and-recommendation ADRs the team can sign off on. No application code.
+**Goal:** Take the locked stack-design decisions and ratify them as ADRs the team signs off on. Per ADR: write the record, capture the alternatives considered (lifted from the brainstorming dialogue and the stack-design spec), capture consequences, move the status from Proposed to Accepted. No application code.
+
+**Inputs:** The stack-design spec ([../specs/2026-05-19-azure-stack-design.md](../specs/2026-05-19-azure-stack-design.md)) provides the locked recommendations for every ADR below.
 
 **Files:**
-- Create: `docs/decisions/` (one ADR per decision below)
-- Create: `docs/decisions/README.md` (index)
+- Create: `docs/decisions/2026-MM-DD-adr-NNN-*.md` (one per decision below; ten total)
+- The index `docs/decisions/README.md` already exists; update its Phase 0 backlog table as ADRs land
 
-**Decision-record format:** title, status, date, context, options considered, decision, consequences, references.
+**Decision-record format:** title, status, date, deciders, context, options considered, decision, consequences, references.
 
 ### Task 0.1 — ADR-001: Web framework and rendering
 
 **Files:**
 - Create: `docs/decisions/2026-MM-DD-adr-001-web-framework.md`
 
-- [ ] **Step 1: List candidate frameworks**
+**Locked decision (from stack-design §10):** Next.js (App Router) + React + TypeScript.
 
-  Document at least four candidates with one-paragraph trade-offs each:
-  - **Next.js (App Router)** — strong SSR + RSC; ecosystem match for shadcn/Tailwind visual language; matches prior attempt; team likely familiar.
-  - **Astro** — content-first, faster page loads, weaker for the LLM-overlay interactive UI.
-  - **Remix** — strong nested routing; smaller ecosystem.
-  - **Hugo / Eleventy (static)** — fastest, but cannot host the AI/approval flows v1 needs.
+- [ ] **Step 1: Capture alternatives considered**
 
-- [ ] **Step 2: Document acceptance criteria**
+  Document the candidates compared in the 2026-05-19 brainstorming:
+  - **Next.js (App Router)** — SSR + RSC; ecosystem match for shadcn/Tailwind; team familiarity; runs natively on App Service as a single Node artefact (chosen)
+  - **Astro** — content-first, smaller bundles; considered because the portal is mostly read-heavy; rejected for maintenance familiarity reasons
+  - **SvelteKit** — smaller bundles than Next; smaller ecosystem for shadcn-style primitives; rejected
+  - **Remix / Hugo / Eleventy** — weaker fits for the LLM-overlay UI; rejected
 
-  Must support: SSR for fast home-page render (§8.2); deep-linkable modal overlays (§6.2); accessible focus management (§8.1); markdown rendering; OIDC integration (§8.5); LLM streaming responses for search (§6.1).
+- [ ] **Step 2: Capture acceptance criteria the decision satisfies**
 
-- [ ] **Step 3: Record decision and rationale**
+  SSR for fast home-page render (§8.2); deep-linkable modal overlays (§6.2); accessible focus management (§8.1); markdown rendering; Easy Auth integration (§8.5); streaming responses for search (§6.1); single-artefact deploy to App Service.
 
-  **Recommended:** Next.js (App Router). Strongest fit for SSR + deep-linkable modals + auth + accessibility primitives. Team familiarity reduces ramp.
+- [ ] **Step 3: Record the decision and rationale**
+
+  Next.js. Rationale: maintenance familiarity, native App Service fit (no hybrid-mode caveats), strong RSC story for the mostly-static read paths, ecosystem match for visual language tooling.
 
 - [ ] **Step 4: Capture consequences**
 
-  Lock-in to React/Node; need a discipline of "no heavy components in marquee pages" to hit the 2s budget; deployment options narrow to Node-hosting platforms.
+  Lock-in to React/Node; need discipline of "no heavy components in marquee pages" to hit the 2s budget; App Service hosting tier must be Linux + Web App for Containers.
 
-- [ ] **Step 5: Commit ADR**
+- [ ] **Step 5: Sign off and commit**
 
 ---
 
-### Task 0.2 — ADR-002: Content store
+### Task 0.2 — ADR-002: Content store and ORM
 
 **Files:**
 - Create: `docs/decisions/2026-MM-DD-adr-002-content-store.md`
 
-- [ ] **Step 1: List candidate stores**
+**Locked decision (from stack-design §10):** Azure Database for PostgreSQL Flexible Server, accessed via Prisma. Prisma Migrate manages schema changes (the Node analogue of Alembic).
 
-  Document trade-offs:
-  - **Sanity CMS** — prior attempt's choice; provides editorial workflows we don't need (approval is in our markdown lifecycle); pricing scales by document; vendor lock.
-  - **Postgres + raw markdown blob + parsed JSON** — full control; matches the audit-log requirement (§7.6) natively; integrates cleanly with full-text search (Phase 3); HMCTS-friendly.
-  - **Filesystem (Git repo) + Postgres index** — round-trippable; matches the user's expressed instinct for Git as safety net; defers Git complexity by NOT being v1.
-  - **Azure Cosmos DB** — gov-cloud option; less idiomatic for relational queries.
+- [ ] **Step 1: Capture alternatives considered**
 
-- [ ] **Step 2: Document acceptance criteria**
+  Stores: Sanity CMS (rejected — vendor lock, redundant editorial workflows); Filesystem Git repo + index (deferred to v2 — round-trippable already); Azure Cosmos DB (rejected — less idiomatic for relational queries).
+  ORMs: Drizzle (rejected — less maintenance familiarity than Prisma at this scale).
 
-  Must support: append-only source-markdown storage (§7.6); approved-and-live parsed data; version_number per entity; submitter/approver fields (§7.7); idempotent AI parse caching; full-text indexing (Phase 3 dependency).
+- [ ] **Step 2: Capture acceptance criteria the decision satisfies**
 
-- [ ] **Step 3: Record decision and rationale**
+  Append-only source-markdown storage (§7.6); approved-and-live parsed data; version_number per entity; submitter/approver fields (§7.7); idempotent AI parse caching; full-text indexing (Phase 3 dependency); Entra authentication (no passwords); managed-identity access from App Service.
 
-  **Recommended:** Postgres. One store for the spine (entities), the audit log (append-only table with raw markdown bytes), and the full-text search index. Aligns with §3.2's "portal store is canonical in v1". Avoids vendor lock the prior attempt regretted.
+- [ ] **Step 3: Record the decision and rationale**
+
+  Azure Database for PostgreSQL Flexible Server with Entra-only authentication. One store for the spine (entities), the audit log (append-only table with raw markdown bytes), and the full-text search index. Prisma chosen for the ORM on maintenance-familiarity grounds; Prisma Migrate generates SQL migrations checked into the repo.
 
 - [ ] **Step 4: Capture consequences**
 
-  Need backup/DR strategy (Phase 5); we own data migrations going forward; the markdown is round-trippable so the future move to E1=b (Git repo as source) remains possible without losing history.
+  Backup/DR strategy needed (Phase 5); we own data migrations going forward via Prisma Migrate; the markdown is round-trippable so a future move to Git-as-source remains possible without losing history; Prisma client size acceptable given non-serverless host.
 
-- [ ] **Step 5: Commit ADR**
+- [ ] **Step 5: Sign off and commit**
 
 ---
 
@@ -115,7 +122,9 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 **Files:**
 - Create: `docs/decisions/2026-MM-DD-adr-003-ai-parser.md`
 
-- [ ] **Step 1: List candidate providers**
+**Locked decision (from stack-design §10):** Azure OpenAI for both parsing (Phase 2) and answer-card synthesis (Phase 3), accessed via managed identity.
+
+- [ ] **Step 1: Capture alternatives considered**
 
   Document trade-offs:
   - **Azure OpenAI** — HMCTS-friendly cloud (gov tenancy); user signalled Azure AI Services preference; structured-output mode supported.
@@ -127,15 +136,15 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 
   Must support: structured-output mode (JSON schema or function-calling) (§7.5); confidence flags per field (§7.5); idempotent for identical input; <10s per parse (acceptable async); fallback path when the API is unavailable (§7.5).
 
-- [ ] **Step 3: Record decision and rationale**
+- [ ] **Step 3: Record the decision and rationale**
 
-  **Recommended:** Azure OpenAI. Data-residency, HMCTS procurement fit, structured-output support. Strict-template parser is the fallback when AI is unavailable (§7.5 — already required).
+  **Decision:** Azure OpenAI. Data-residency, HMCTS procurement fit, structured-output support. Strict-template parser is the fallback when AI is unavailable (§7.5 — already required). Access via managed identity (`DefaultAzureCredential`), no keys.
 
 - [ ] **Step 4: Capture consequences**
 
-  Per-parse cost; cache parses by source-markdown hash to avoid re-billing identical re-uploads; ops needs an Azure subscription + budget alert.
+  Per-parse cost; cache parses by source-markdown hash to avoid re-billing identical re-uploads; ops needs Azure OpenAI quota allocated in tenant + budget alert.
 
-- [ ] **Step 5: Commit ADR**
+- [ ] **Step 5: Sign off and commit**
 
 ---
 
@@ -144,7 +153,9 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 **Files:**
 - Create: `docs/decisions/2026-MM-DD-adr-004-search.md`
 
-- [ ] **Step 1: List candidate search backends**
+**Locked decision (from stack-design §10):** Postgres full-text search. Adequate at v1 scale; Azure AI Search captured as known tech debt (stack-design §9) — revisit if relevance proves poor or entity count grows beyond ~5k.
+
+- [ ] **Step 1: Capture alternatives considered**
 
   Document trade-offs:
   - **Postgres full-text + LLM rerank/answer** — simplest; one fewer service; good enough for our scale; relevance via LLM rerank on top-N.
@@ -156,15 +167,15 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 
   Must support: NL queries returning a one-sentence answer card + ranked entity matches (§5.7, §6.1); overlay results within 500ms perceived (§8.2); entity-type filtering (§5.7); cheap to operate at DTS scale (hundreds of entities, not millions).
 
-- [ ] **Step 3: Record decision and rationale**
+- [ ] **Step 3: Record the decision and rationale**
 
-  **Recommended:** Postgres full-text + Azure OpenAI for answer-card synthesis. Lowest moving-parts; matches our scale; keeps state in one store (ADR-002). Re-evaluate at v2 if relevance is poor.
+  **Decision:** Postgres full-text + Azure OpenAI for answer-card synthesis. Lowest moving-parts; matches our scale; keeps state in one store (ADR-002). Saves ~£200/month vs Azure AI Search at our scale.
 
 - [ ] **Step 4: Capture consequences**
 
-  Search-quality ceiling capped by Postgres FTS; LLM rerank optional. Search analytics (zero-result queries, §3.2 implies low-friction discovery) feeds future relevance work.
+  Search-quality ceiling capped by Postgres FTS; LLM rerank optional. Search analytics (zero-result queries) feeds future relevance work and the AI Search graduation decision.
 
-- [ ] **Step 5: Commit ADR**
+- [ ] **Step 5: Sign off and commit**
 
 ---
 
@@ -173,7 +184,9 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 **Files:**
 - Create: `docs/decisions/2026-MM-DD-adr-005-auth.md`
 
-- [ ] **Step 1: List candidate providers**
+**Locked decision (from stack-design §10):** Easy Auth → Microsoft Entra ID. Platform-level sidecar on App Service. The app consumes `X-MS-CLIENT-PRINCIPAL` header — no auth library in code for v1.
+
+- [ ] **Step 1: Capture alternatives considered**
 
   Document trade-offs:
   - **Azure Entra ID via OIDC** — HMCTS default; group claims map to team membership.
@@ -185,15 +198,15 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 
   Must support: DTS staff sign-in (§8.5); email identity claim; optional team-membership claim feeding the "Your team" shortcut (§5.2); submitter/approver distinct identities (§7.6); separation from preview/dev environments.
 
-- [ ] **Step 3: Record decision and rationale**
+- [ ] **Step 3: Record the decision and rationale**
 
-  **Recommended:** Azure Entra ID via OIDC. HMCTS-default, group-claim-friendly, sane production posture. Preview-auth (header-trusted email) survives for non-prod environments only — clearly toggled off in production.
+  **Decision:** Microsoft Entra ID via App Service Easy Auth (platform sidecar). HMCTS-default identity provider; zero auth library in the app code. Header-trusted preview-auth path retained for non-prod environments only; rejected outright in production via Easy Auth being the only auth source.
 
 - [ ] **Step 4: Capture consequences**
 
-  Entra app registration + group provisioning becomes an ops dependency. Team-claim mapping requires a convention (groups named per Team) — capture in this ADR.
+  Entra app registration + group provisioning becomes an ops dependency. Team-claim mapping requires a convention (groups named per Team) — capture in this ADR. Easy Auth sidecar means auth happens at the platform edge before request reaches Next.js — local dev needs a parallel header-trusted shim.
 
-- [ ] **Step 5: Commit ADR**
+- [ ] **Step 5: Sign off and commit**
 
 ---
 
@@ -202,27 +215,28 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 **Files:**
 - Create: `docs/decisions/2026-MM-DD-adr-006-hosting.md`
 
-- [ ] **Step 1: List candidate platforms**
+**Locked decision (from stack-design §10):** Azure App Service for Linux (Web App for Containers). Image hosted in pre-provisioned HMCTS ACR (`hmctsprod.azurecr.io`). Azure Front Door for CDN + WAF. The same container image is deployable to AKS (cnp shared cluster) without rebuild if PlatOps later mandates the move.
 
-  Document trade-offs:
-  - **Azure App Service** — HMCTS-default; Node runtime fits ADR-001; Entra/Azure OpenAI integrations co-located.
-  - **Render (Blueprint)** — prior attempt's preview platform; great for previews, weaker for HMCTS production.
-  - **GOV.UK PaaS** — being deprecated as of 2026.
-  - **AWS Elastic Beanstalk / ECS** — capable but off the HMCTS-default path.
+- [ ] **Step 1: Capture alternatives considered**
 
-- [ ] **Step 2: Document acceptance criteria**
+  - **Azure App Service for Containers** — chosen. Single Node artefact; no serverless caps; native Next.js runtime; deployment slots for blue/green.
+  - **Azure Static Web Apps** — rejected. Hybrid Next.js mode imposes 45s/250MB function caps and ISR limitations; bigger fit for Astro/static-first projects.
+  - **Azure Container Apps** — rejected for v1. Useful "what if we needed scale-to-zero" reference point.
+  - **AKS via cnp shared cluster** — overkill for v1. Retained as a future migration target; the containerised image is portable.
 
-  Must support: production hosting alongside Entra ID + Azure OpenAI in the same tenant; preview environments per branch (or per PR); rollbacks; structured logs; secrets management.
+- [ ] **Step 2: Capture acceptance criteria the decision satisfies**
 
-- [ ] **Step 3: Record decision and rationale**
+  Production hosting alongside Entra ID + Azure OpenAI in the same tenant; deployment slots for safe releases; rollbacks via slot swap; structured logs to App Insights; secrets via Key Vault + managed identity; future portability to AKS at zero migration cost on the image.
 
-  **Recommended:** Azure App Service for production; Render or Vercel for preview environments (cheap, fast deploys, header-trusted preview-auth). Preview→production deploy is gated.
+- [ ] **Step 3: Record the decision and rationale**
+
+  Azure App Service for Linux (Web App for Containers). Image in HMCTS ACR. Front Door in front. Image built via `next/standalone` mode for tiny production image; same image runs locally via `docker compose`.
 
 - [ ] **Step 4: Capture consequences**
 
-  Two-platform CI; preview and production runtimes differ — caught by automated parity tests in Phase 5.
+  Always-on plan cost (no scale-to-zero); Front Door adds a managed resource (HMCTS baseline WAF rules apply); ACR push permissions for GHA need HMCTS org-provisioned credentials (already exist).
 
-- [ ] **Step 5: Commit ADR**
+- [ ] **Step 5: Sign off and commit**
 
 ---
 
@@ -231,38 +245,124 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 **Files:**
 - Create: `docs/decisions/2026-MM-DD-adr-007-visual-tooling.md`
 
-- [ ] **Step 1: Decide implementation of §6.6 principles**
+**Locked decision (from stack-design §10):** Tailwind CSS + shadcn/ui primitives + Lucide icons + Geist font (served via `next/font`). A custom design system was rejected as over-investment for v1.
 
-  The spec describes principles (Geist, near-monochrome, hairline borders, soft status pills). The ADR picks the *tooling* that delivers those principles consistently.
+- [ ] **Step 1: Capture alternatives considered**
 
-  Likely shape: **Tailwind CSS + shadcn/ui primitives + Lucide icons + Geist font**. Document the alternative of a custom design system (rejected as over-investment for v1).
+  Custom design system rejected (over-investment); MUI / Chakra rejected (heavier, less aligned with the calm-monochrome aesthetic the spec calls for).
 
 - [ ] **Step 2: Define design tokens**
 
   Token names, values, and where they live. CSS variables driven by Tailwind config. Token inventory matches §6.6 (colour, spacing 8px base, radii, type scale).
 
-- [ ] **Step 3: Record decision**
+- [ ] **Step 3: Record the decision**
 
 - [ ] **Step 4: Capture consequences**
 
-  Lock the icon family early to avoid bikeshedding. Disallow ad-hoc component CSS to keep the calm look intact.
+  Lock the icon family early to avoid bikeshedding. Disallow ad-hoc component CSS to keep the calm look intact. shadcn copy-paste model means we own the component code — accept this for control over the visual language.
 
-- [ ] **Step 5: Commit ADR**
+- [ ] **Step 5: Sign off and commit**
 
 ---
 
-### Task 0.8 — Decision record index and sign-off
+### Task 0.8 — ADR-008: Platform services
 
 **Files:**
-- Create: `docs/decisions/README.md`
+- Create: `docs/decisions/2026-MM-DD-adr-008-platform-services.md`
 
-- [ ] **Step 1: Index every ADR**
+**Locked decision (from stack-design §10):** Azure Key Vault + Application Insights + Log Analytics workspace + Azure Front Door. RBAC is managed-identity-only — no service principals with secrets; no connection strings with passwords.
+
+- [ ] **Step 1: Capture alternatives considered**
+
+  - **Sentry / Datadog** for observability — rejected; App Insights is native Azure with managed-identity ingestion.
+  - **GitHub Secrets at runtime** for secret storage — rejected; Key Vault is centralised, auditable, rotatable.
+  - **Cloudflare for CDN/WAF** — rejected; Front Door keeps the stack in-Azure with consistent identity model.
+
+- [ ] **Step 2: Capture acceptance criteria the decision satisfies**
+
+  Centralised secret storage with audit; observability with managed-identity ingestion; CDN + WAF in front of App Service; identity model is uniform (no keys to leak).
+
+- [ ] **Step 3: Record the decision and rationale**
+
+  Key Vault + App Insights + Log Analytics + Front Door. All accessed via App Service user-assigned managed identity. Terraform `platform/` root provisions identities and RBAC; `infrastructure/` root provisions the services that consume them.
+
+- [ ] **Step 4: Capture consequences**
+
+  Managed-identity discipline is non-negotiable — code that uses `DefaultAzureCredential` everywhere; Terraform that never produces a connection string with embedded password. WAF rule set per HMCTS baseline (link from ADR).
+
+- [ ] **Step 5: Sign off and commit**
+
+---
+
+### Task 0.9 — ADR-009: Repository topology
+
+**Files:**
+- Create: `docs/decisions/2026-MM-DD-adr-009-repo-topology.md`
+
+**Locked decision (from stack-design §3, §10):** Two repos. `hmcts/dts-portfolio-portal` (this repo) is **public** and carries the app, Dockerfile, CI workflows, and docs. `hmcts/dts-portfolio-portal-infra` is **internal** visibility (intent to publish once HMCTS-DTS PlatOps confirms an IaC publicity stance) and carries the Terraform plus the `terraform apply` workflows triggered via cross-repo `repository_dispatch`. Both repos follow the same code-in-the-open disciplines from day one.
+
+- [ ] **Step 1: Capture alternatives considered**
+
+  - **Same-repo with CODEOWNERS** — rejected for v1. Reveals architecture-blueprint to public reconnaissance without HMCTS PlatOps having a confirmed IaC publicity stance.
+  - **Separate private infra repo (permanent)** — rejected. Locks out public visibility option if PlatOps later confirms it's safe.
+  - **Same-repo for v1, split at Phase 5** — rejected. Migration cost of the public→public split (after the repo has accumulated history) is higher than starting with two repos.
+
+- [ ] **Step 2: Capture acceptance criteria the decision satisfies**
+
+  Public app code (C1); infra-code visibility deferred pending PlatOps; both repos follow public-safe disciplines from day one so a future flip is one repo-settings change; cross-repo deploy orchestration via `repository_dispatch` on deploy tags.
+
+- [ ] **Step 3: Record the decision and rationale**
+
+  Two repos as above. Dispatch authentication via a GitHub App (preferred over PAT — no rotation overhead). Dispatch step in the app repo is **gated by `INFRA_DISPATCH_ENABLED` repo variable** (default `false`) so the workflow is fully wired but dormant until the Azure estate is ready.
+
+- [ ] **Step 4: Capture consequences**
+
+  Cross-repo PR coordination when app+infra need to change together (rare; expected during framework or service migrations). Two sets of CODEOWNERS, branch protection, and READMEs to maintain. Infra repo visibility flip is captured as known tech debt (stack-design §9) with PlatOps confirmation as the trigger.
+
+- [ ] **Step 5: Sign off and commit**
+
+---
+
+### Task 0.10 — ADR-010: Deploy pipeline
+
+**Files:**
+- Create: `docs/decisions/2026-MM-DD-adr-010-deploy-pipeline.md`
+
+**Locked decision (from stack-design §6, §10):** All-GHA CI/CD in v1. The `hmcts/courtstranscribe` pattern is adapted: GHA builds and pushes the image to ACR, pushes a `deploy-<env>-<version>-<run_id>` git tag for audit, and fires `repository_dispatch` against the infra repo (gated by `INFRA_DISPATCH_ENABLED`). ADO + cnp pipelines are deferred as known tech debt.
+
+- [ ] **Step 1: Capture alternatives considered**
+
+  - **ADO + cnp pipelines** (the courtstranscribe pattern verbatim) — deferred. Adds ADO setup cost; loses the all-GHA simplicity for v1.
+  - **GHA monolith** (build + apply + swap in one workflow run on the same repo) — rejected. Mixing build with terraform apply in the same workflow run conflates two distinct identities (one for image push, one for infra apply); cross-repo dispatch keeps the separation clean and aligns with the two-repo topology.
+
+- [ ] **Step 2: Capture acceptance criteria the decision satisfies**
+
+  Audit trail: every deploy is a tag (`deploy-<env>-<version>-<run_id>`). Cross-repo orchestration: `repository_dispatch` from app repo → infra repo `deploy-<env>.yml`. Gated dispatch: `INFRA_DISPATCH_ENABLED` repo variable defaults `false` so the chain is dormant until estate setup completes.
+
+- [ ] **Step 3: Record the decision and rationale**
+
+  All-GHA, courtstranscribe-derived. Deploy tags retained for audit even without ADO consuming them.
+
+- [ ] **Step 4: Capture consequences**
+
+  Workload identity federation between GHA and Azure becomes a Phase 1 setup task (per environment, per repo). Tag protection ruleset must allow `github-actions[bot]` to push and delete `deploy-*` tags. ADO migration is a future change (revisit when DTS PlatOps standardisation triggers).
+
+- [ ] **Step 5: Sign off and commit**
+
+---
+
+### Task 0.11 — Decision record index and sign-off
+
+**Files:**
+- Update: `docs/decisions/README.md` (Phase 0 backlog table grows from 7 to 10)
+
+- [ ] **Step 1: Reflect every ADR in the index**
 
   One-line summary per ADR, status (proposed / accepted / superseded), date.
 
 - [ ] **Step 2: Capture sign-off list**
 
-  Names / roles of the people who reviewed each ADR before phase 1 begins.
+  Names / roles of the people who reviewed each ADR before Phase 1 begins.
 
 - [ ] **Step 3: Commit and circulate**
 
@@ -278,9 +378,101 @@ Phases 1 → 2 → 3 → 4 are sequential. Phase 5 can begin late in Phase 4 (ac
 
 ### Task 1.1 — Project initialisation
 
-Initialise the chosen web framework, TypeScript, lint, formatter, and a baseline CI workflow. Add a `README.md` linking to the spec and this plan. Commit per stable subtask (init, lint config, CI green).
+Initialise the Next.js (App Router) project with TypeScript, pnpm, ESLint + Prettier. Add a `Dockerfile` using Next.js `output: 'standalone'` for a tiny production image. Add `docker-compose.yml` for local dev: app container + a local Postgres + pgAdmin, parity with what CI runs. Add `.nvmrc` matching the Node version baked into the Dockerfile base image. Add Vitest and Playwright (with `@axe-core/playwright`) baseline configs. Add `README.md` linking to the requirements spec, stack-design spec, and this plan. Commit per stable subtask (init, Dockerfile, compose, lint, test).
 
-**Acceptance:** `pnpm dev` (or framework equivalent) renders a blank page; `pnpm lint` / `pnpm typecheck` / `pnpm test` exit cleanly; CI runs and goes green on push.
+**Acceptance:** `pnpm dev` renders a blank page; `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e` all exit cleanly; `docker compose up` brings up the app + Postgres + pgAdmin locally; the built image runs identically to local dev (modulo HMR).
+
+**Spec ref:** stack-design §3, §5.
+
+### Task 1.1a — CI workflows duplicated from courtstranscribe
+
+Copy and adapt the courtstranscribe `.github/workflows/` set per the stack-design §6.1–§6.2 inventory. Single-app simplifications throughout (no frontend/backend split).
+
+**Files (this repo):**
+- `.github/workflows/secrets-scanner.yml` (copy as-is)
+- `.github/workflows/codeql.yml` (copy as-is)
+- `.github/workflows/code-analysis.yml` (adapt for Node toolchain)
+- `.github/workflows/prune-deploy-tags.yml` (copy as-is)
+- `.github/workflows/deploy-status.yml` (copy as-is)
+- `.github/workflows/sbom.yml` (adapt — single CycloneDX SBOM via `npx @cyclonedx/cdxgen -t pnpm --required-only`)
+- `.github/workflows/tests.yml` (adapt — Vitest unit + Playwright E2E + axe a11y against service Postgres)
+- `.github/workflows/db-migration-check.yml` (adapt — `npx prisma migrate deploy && npx prisma migrate status` against service Postgres)
+- `.github/workflows/ci-build-images.yml` (adapt — single image, single CHANGELOG via `git-cliff`)
+- `.github/workflows/deploy-dev.yml` / `deploy-stg.yml` / `deploy-prod.yml` (adapt — fire `repository_dispatch` to infra repo instead of relying on ADO; gated per Task 1.1c)
+- `.github/dependabot.yml` (npm + GHA + Docker ecosystems)
+- `cliff.toml` (git-cliff config, copy as-is)
+- `.pre-commit-config.yaml` (adapt to Node hooks: gitleaks, prettier, eslint, conventional-commit lint on PR title)
+
+**Acceptance:** All workflows pass on a PR (with the `build` and `push` jobs skipped on `pull_request` events per the courtstranscribe pattern). Secrets scanner finds nothing in the seed history. SBOM artefact uploads with a valid hash. `git-cliff --version` runs.
+
+**Spec ref:** stack-design §6.
+
+### Task 1.1b — CODEOWNERS, branch protection, and rulesets
+
+Configure the GitHub-side governance per stack-design §6.6.
+
+**Files (this repo):**
+- `CODEOWNERS` (root or `.github/`) — assign reviewer teams; scope `docs/decisions/**` to the architecture-owning reviewer
+- `.github/SECURITY.md` — HMCTS disclosure policy
+- `.github/PULL_REQUEST_TEMPLATE.md` — short template prompting spec/ADR reference
+- `.github/ISSUE_TEMPLATE/bug.md` and `feature.md` — short templates
+
+**GitHub configuration (not in repo, applied via repo settings):**
+- Branch protection on `main`: required PR review (≥1), required status checks (`tests`, `codeql`, `secrets-scanner`, `sbom`, `db-migration-check`, `lint`, `typecheck`, `build`), signed commits, no direct push, no force push, no deletion
+- Tag protection ruleset on `deploy-*`: allow `github-actions[bot]` push + delete; deny everyone else
+- Tag protection ruleset on `v*`: deny force-push + deletion (releases via UI only)
+- GitHub Environments configured: `dev`, `stg`, `prod`. Per-env secrets `AZURE_CLIENT_ID_<ENV>` (populated from the `make apply-platform-<env>` output in the infra repo). Reviewers required on `prod` only.
+- GitHub Advanced Security enabled (secret scanning + push protection)
+
+**Acceptance:** A test direct-push to `main` is rejected; an unsigned commit is rejected; a `deploy-*` tag pushed by a human is rejected; the prod environment requires approval.
+
+**Spec ref:** stack-design §6.6, §6.7.
+
+### Task 1.1c — Cross-repo dispatch wiring (gated)
+
+Wire the `repository_dispatch` step in each `deploy-<env>.yml` to fire against the infra repo, but **gated so it's dormant until the Azure estate is ready**.
+
+**Configuration:**
+- Repo variable `INFRA_DISPATCH_ENABLED` — default `false`; flip to `true` once the infra repo exists, federated identities are provisioned, and the deploy chain is intended to run end-to-end.
+- Repo variable `INFRA_DISPATCH_TARGET_REPO` — set to `hmcts/dts-portfolio-portal-infra` when the repo is created.
+- Repo secret `INFRA_DISPATCH_APP_ID` + `INFRA_DISPATCH_PRIVATE_KEY` (GitHub App; preferred) OR `INFRA_DISPATCH_TOKEN` (fine-scoped PAT) — populated when the dispatch goes live.
+
+**Workflow step shape:**
+```yaml
+- name: Trigger infra deploy
+  if: vars.INFRA_DISPATCH_ENABLED == 'true'
+  uses: peter-evans/repository-dispatch@v3
+  with:
+    token: ${{ steps.app-token.outputs.token }}
+    repository: ${{ vars.INFRA_DISPATCH_TARGET_REPO }}
+    event-type: deploy-${{ env.DEPLOY_ENV }}
+    client-payload: |
+      { "version": "${{ needs.build.outputs.version }}", "image_tag": "${{ needs.build.outputs.version }}", "run_id": "${{ github.run_id }}" }
+```
+
+**Acceptance:** With `INFRA_DISPATCH_ENABLED=false`, the deploy workflow completes successfully (image builds, tag pushes) and the dispatch step is skipped cleanly — no error. With `INFRA_DISPATCH_ENABLED=true` and a valid target repo, dispatch fires and the infra repo's workflow receives the payload.
+
+**Owner note:** The user creates the infra repo. This repo's Phase 1 work readies *everything* to dispatch; flipping the variable is the user's action once the estate is ready.
+
+**Spec ref:** stack-design §3.4, §3.5, §9.
+
+### Task 1.1d — Document infra-repo bootstrap requirements
+
+Author `docs/runbooks/bootstrap-infra-repo.md` capturing what the user needs to do to create and prepare `hmcts/dts-portfolio-portal-infra`. Does not commit infra code to this repo — the infra code lives only in the infra repo per ADR-009.
+
+**Contents of the runbook:**
+- Create the infra repo at internal visibility under `hmcts/`
+- Set up CODEOWNERS, branch protection, and rulesets to match this repo's posture
+- Add the Terraform skeleton: `infrastructure/` (App Service, ACR-pull RBAC, Front Door, Postgres, OpenAI, Key Vault, App Insights, Log Analytics, Front Door) and `platform/` (managed identities, OIDC federation, RBAC)
+- Add the `.github/workflows/deploy-<env>.yml` workflows triggered by `repository_dispatch` from this repo
+- Add the `Makefile` patterns from courtstranscribe: `make setup-<env>` (init + plan) and `make apply-<env>` (apply after review)
+- Run `make apply-platform-<env>` per environment and copy the federated client IDs into this repo's environment secrets (`AZURE_CLIENT_ID_DEV` / `_STG` / `_PROD`) and the infra repo's matching secrets
+- Once federated identities work end-to-end with a manual `terraform apply`, set `INFRA_DISPATCH_ENABLED=true` and `INFRA_DISPATCH_TARGET_REPO=hmcts/dts-portfolio-portal-infra` in this repo's variables
+- Confirm a `repository_dispatch` from this repo arrives in the infra repo and runs end-to-end
+
+**Acceptance:** Runbook reads as a complete checklist; a colleague unfamiliar with the project can follow it without asking questions.
+
+**Spec ref:** stack-design §3, §6.
 
 ### Task 1.2 — Visual tokens
 
@@ -640,19 +832,21 @@ Demo: a half-dozen real questions exercising the answer card, the ranked list, t
 
 **Spec sections covered:** §7.7 (capability gating), §8.5 (authentication).
 
-### Task 4.1 — OIDC integration
+### Task 4.1 — Easy Auth integration (Entra ID)
 
-Wire the chosen provider (ADR-005) via OIDC. Routes for sign-in, sign-out, callback. Session stored per framework conventions (cookies + signed payload).
+Configure App Service Easy Auth (the platform sidecar) to require Microsoft Entra ID sign-in. No auth library in the Next.js code — the sidecar handles the OIDC dance and surfaces the signed-in identity via the `X-MS-CLIENT-PRINCIPAL` header on every request that reaches the app. In Next.js, read the header inside an RSC helper that returns a typed `getCurrentUser()` value (email, OID, groups). Sign-out via `/.auth/logout`.
 
-**Acceptance:** Sign-in round-trip works in the preview environment; session persists across page reloads; sign-out clears it.
+**Files (infra repo, this task surfaces the requirement):** Terraform configures `auth_settings_v2` on the App Service with Entra provider. App registration created (or referenced) per the deployment runbook.
 
-**Spec ref:** §8.5.
+**Acceptance:** Visiting `/` in a non-prod env without an Entra session redirects to the Entra sign-in page; after sign-in, `getCurrentUser()` returns the expected identity; `/.auth/logout` clears the session.
 
-### Task 4.2 — Auth middleware
+**Spec ref:** §8.5, stack-design §4, §10 (ADR-005).
 
-Gate all routes except sign-in/callback. Unauthenticated requests redirect with returnTo. Preview environments retain the existing header-trusted email path (toggle by environment), production rejects it.
+### Task 4.2 — Local-dev auth shim
 
-**Acceptance:** Unauthenticated request to `/` is redirected; production build fails if header-trusted path is reachable.
+Easy Auth lives at the platform edge, so local dev (running `next dev` or `docker compose up`) doesn't see the `X-MS-CLIENT-PRINCIPAL` header. Provide a dev-only middleware that injects a fake principal header from an `.env.local` value (`DEV_FAKE_PRINCIPAL_EMAIL`, `DEV_FAKE_PRINCIPAL_GROUPS`). The middleware **must not** be reachable in production — gated by a build-time flag or a hard `NODE_ENV !== 'production'` check.
+
+**Acceptance:** `pnpm dev` populates `getCurrentUser()` from the env-injected fake principal; production build fails an assertion if the shim is reachable.
 
 **Spec ref:** §8.5.
 
@@ -768,13 +962,13 @@ Document RPO/RTO for the content store + audit log. Configure automated Postgres
 
 **Spec ref:** §3.2 (consumed-by, append-only) implies the audit log is precious.
 
-### Task 5.8 — Deployment automation
+### Task 5.8 — Deployment automation (all-GHA, cross-repo)
 
-CI builds an immutable artefact; gated production deploy with rollback. Smoke tests run post-deploy. Preview environment per branch.
+CI builds an immutable container artefact, pushes to HMCTS ACR, pushes a `deploy-<env>-<version>-<runid>` git tag, and fires `repository_dispatch` against the infra repo (per ADR-010). The infra repo's matching workflow runs `terraform plan` (precheck), `terraform apply`, `az webapp config set --linuxFxVersion`, `az webapp restart`, and post-deploy smoke tests. Production deploy is a manual `workflow_dispatch` with a version-existence check against ACR (no rebuild). Rollback is a re-run of the prod deploy workflow against the previous version.
 
-**Acceptance:** Successful deploy through the gated pipeline; rollback rehearsed.
+**Acceptance:** Successful end-to-end deploy via the cross-repo chain in dev; staging deploy fires from a GitHub release; production promotion verifies the image exists in ACR before tagging; rollback rehearsed by promoting a previous version.
 
-**Spec ref:** —
+**Spec ref:** stack-design §3.4, §6, §10 (ADR-010).
 
 ### Task 5.9 — Operator documentation
 
@@ -790,7 +984,20 @@ Write `docs/runbooks/`:
 
 **Spec ref:** §3.2 ("admin actions creating new Jurisdictions… managed as configuration").
 
-### Task 5.10 — Production cutover and Phase 5 review
+### Task 5.10 — Re-evaluate infra-repo visibility
+
+Per ADR-009 and stack-design §3 / §9: the infra repo started at internal visibility with intent to publish. By Phase 5 we have a body of code to audit and a clear sense of what's exposed.
+
+- [ ] Audit the infra repo for residual sensitivity per stack-design §3.3 (no hardcoded IDs, no secret names that reveal internal structure beyond what's already public via DNS / App Service URLs, no comments referencing internal context).
+- [ ] Consult HMCTS-DTS PlatOps on the IaC publicity stance. Capture the position as a follow-up ADR.
+- [ ] If approved: flip the infra repo to public. Update ADR-009 status to "Superseded by ADR-NNN" (the follow-up).
+- [ ] If declined: capture the reason in a follow-up ADR; leave the infra repo internal.
+
+**Acceptance:** Position is recorded as an ADR with a concrete rationale, regardless of direction.
+
+**Spec ref:** stack-design §3.3, §9; ADR-009.
+
+### Task 5.11 — Production cutover and Phase 5 review
 
 Cut the portal over to production (the chosen host, the chosen auth provider, the chosen AI tenant). Hold a release retrospective. Capture v2 backlog items.
 
