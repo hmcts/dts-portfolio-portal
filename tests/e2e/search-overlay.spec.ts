@@ -27,6 +27,19 @@ test('"/" keyboard shortcut focuses the search input from anywhere', async ({
   await expect(page.getByLabel("Search the portal")).toBeFocused();
 });
 
+test("⌘/Ctrl-K keyboard shortcut focuses the search input", async ({
+  page,
+  browserName: _browserName,
+}) => {
+  await page.goto("/");
+  await page.locator("h1").click();
+  // Use Control on Linux/Windows; Meta on macOS. Playwright's
+  // KeyboardModifier doesn't auto-translate, so press both modifiers
+  // — the handler accepts either.
+  await page.keyboard.press("Control+K");
+  await expect(page.getByLabel("Search the portal")).toBeFocused();
+});
+
 test("Escape closes the overlay and blurs the input", async ({ page }) => {
   await page.goto("/");
   const input = page.getByLabel("Search the portal");

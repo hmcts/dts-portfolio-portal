@@ -52,23 +52,34 @@ export function SearchOverlay() {
     setActive(0);
   }, [results]);
 
-  // Global "/" hotkey
+  // Global hotkeys per spec §6.1:
+  //   "/"               — focus the input from anywhere
+  //   ⌘K / Ctrl-K       — focus the input from anywhere (matches the
+  //                       usual command-bar shortcut convention)
+  // Both are skipped when the user is typing in a form field so we
+  // don't steal focus mid-edit.
   useEffect(() => {
     function onGlobalKey(e: globalThis.KeyboardEvent) {
-      if (e.key !== "/") return;
+      const isSlash = e.key === "/";
+      const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
+      if (!isSlash && !isCmdK) return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
       const editable = target?.isContentEditable;
+      // "/" must never steal focus from form fields. ⌘K is universal
+      // enough that users expect it to work even from an input.
       if (
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        tag === "SELECT" ||
-        editable
+        isSlash &&
+        (tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          editable)
       ) {
         return;
       }
       e.preventDefault();
       inputRef.current?.focus();
+      inputRef.current?.select();
     }
     window.addEventListener("keydown", onGlobalKey);
     return () => window.removeEventListener("keydown", onGlobalKey);
