@@ -1,0 +1,173 @@
+// Prisma schema for the DTS Portfolio Portal.
+//
+// Entity model from requirements spec §4:
+//   Jurisdiction (1) ─ Product Domain (N) ─┬─ Team (N)
+//                                          └─ Product (N) ─ Initiative (chip)
+//
+// Audit log from requirements spec §7.6: append-only record of every
+// content upload. Append-only is enforced at the database layer in
+// migrations (REVOKE UPDATE, DELETE on the submission table), not here.
+//
+// Identity rules:
+//   - Each entity has a stable cuid() primary key plus a unique URL slug
+//     (the slug is what /j/<slug>, /d/<slug>, /t/<slug>, /p/<slug> use).
+//   - Slugs are author-set in markdown front-matter; the AI parser
+//     validates uniqueness at approve time, not at upload time.
+//   - Jurisdiction slugs are a fixed taxonomy in v1 (§3.2): crime, civil,
+//     family, tribunals, administrative.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EntityKind {
+  jurisdiction
+  domain
+  team
+  product
+}
+
+enum TimeBucket {
+  NOW
+  NEXT
+  LATER
+}
+
+enum ProductStage {
+  discovery
+  alpha
+  beta
+  live
+  retiring
+  retired
+}
+
+model Jurisdiction {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  name        String
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  domains     ProductDomain[]
+  consumes    Product[]      @relation("ConsumedByJurisdiction")
+}
+
+model ProductDomain {
+  id              String        @id @default(cuid())
+  slug            String        @unique
+  name            String
+  description     String?
+  strategicThemes Theme[]
+  jurisdictionId  String
+  jurisdiction    Jurisdiction  @relation(fields: [jurisdictionId], references: [id])
+  teams           Team[]
+  products        Product[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([jurisdictionId])
+}
+
+model Theme {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  domainId    String
+  domain      ProductDomain @relation(fields: [domainId], references: [id])
+  position    Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([domainId])
+}
+
+model Team {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  name          String
+  description   String?
+  contact       String?
+  domainId      String
+  domain        ProductDomain @relation(fields: [domainId], references: [id])
+  operates      Product[]     @relation("TeamOperatesProduct")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([domainId])
+}
+
+model Product {
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  name            String
+  description     String?
+  stage           ProductStage   @default(discovery)
+  domainId        String
+  domain          ProductDomain  @relation(fields: [domainId], references: [id])
+  operatingTeamId String
+  operatingTeam   Team           @relation("TeamOperatesProduct", fields: [operatingTeamId], references: [id])
+  consumedBy      Jurisdiction[] @relation("ConsumedByJurisdiction")
+  initiatives    Initiative[]
+  outboundLinks  OutboundLink[]
+  lastApprovedAt DateTime?
+  lastApprovedBy String?
+  versionNumber  Int            @default(1)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([domainId])
+  @@index([operatingTeamId])
+}
+
+model Initiative {
+  id          String     @id @default(cuid())
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id])
+  bucket      TimeBucket
+  title       String
+  description String?
+  outboundUrl String?
+  position    Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([productId, bucket])
+}
+
+model OutboundLink {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  label     String
+  url       String
+  position  Int      @default(0)
+
+  @@index([productId])
+}
+
+// Append-only audit log. INSERT-only at the application layer; UPDATE
+// and DELETE revoked at the database layer in migrations. Tracks every
+// markdown upload + AI parse + approval event per spec §7.6.
+model Submission {
+  id                String      @id @default(cuid())
+  entityKind        EntityKind
+  entityId          String?
+  submitter         String
+  submittedAt       DateTime    @default(now())
+  sourceMarkdown    Bytes
+  sourceMarkdownSha String
+  aiParsedOutput    Json?
+  aiConfidenceFlags Json?
+  approver          String?
+  approvedAt        DateTime?
+  versionNumber     Int?
+  notes             String?
+
+  @@index([entityKind, entityId])
+  @@index([sourceMarkdownSha])
+}

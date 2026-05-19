@@ -52,6 +52,9 @@ node_modules/
 .yarn/build-state.yml
 .yarn/unplugged
 
+# --- TypeScript ---
+*.tsbuildinfo
+
 # --- Build / dist (generic) ---
 dist/
 build/
@@ -69,6 +72,11 @@ out/
 # --- Test / coverage ---
 coverage/
 .nyc_output/
+
+# --- Playwright ---
+test-results/
+playwright-report/
+playwright/.cache/
 
 # --- Python (in case Phase 0 picks Python) ---
 __pycache__/
