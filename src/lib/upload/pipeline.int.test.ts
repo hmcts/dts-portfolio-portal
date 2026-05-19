@@ -85,6 +85,9 @@ describe("processUpload pipeline", () => {
       VALID_TEAM_MARKDOWN,
     );
     expect(row!.aiParsedOutput).not.toBeNull();
+    // Task 2.14: parse source persisted alongside the parsed output
+    // so the approval screen can surface which parser was used.
+    expect(row!.aiParseSource).toBe("strict-template");
   });
 
   it("creates a Submission for a valid Product document with roadmap chips", async () => {

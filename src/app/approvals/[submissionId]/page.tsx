@@ -115,6 +115,21 @@ export default async function ApprovalDetailPage({
         }
       />
 
+      <div className="-mt-2 mb-6 flex flex-wrap items-center gap-2">
+        <Eyebrow>Parse source</Eyebrow>
+        <StatusPill
+          tone={sourcePill.tone}
+          icon={<Cpu size={12} aria-hidden="true" />}
+          label={sourcePill.label}
+        />
+        {submission.aiParseSource === "strict-template" ? (
+          <span className="text-[12px] text-[var(--color-muted)]">
+            Azure OpenAI was unavailable or the kill-switch is set — output is
+            the strict-template fallback. Non-canonical sections are lost.
+          </span>
+        ) : null}
+      </div>
+
       {lowConfidence.length > 0 ? (
         <Section
           eyebrow="AI confidence"

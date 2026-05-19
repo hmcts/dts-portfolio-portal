@@ -31,5 +31,13 @@ export default defineConfig({
     timeout: 120_000,
     stdout: "ignore",
     stderr: "pipe",
+    // Force the strict-template fallback parser even if a developer
+    // has AOAI vars in their .env.local. The e2e suite relies on
+    // deterministic parser output; the AI-down fallback spec is the
+    // dedicated test in ai-down-fallback.spec.ts. See ADR-003 / spec
+    // §7.5 and Phase 2 task 2.14.
+    env: {
+      AI_PARSER_FORCE_FALLBACK: "true",
+    },
   },
 });
