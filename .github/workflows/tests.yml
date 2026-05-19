@@ -52,7 +52,15 @@ jobs:
           cache: pnpm
 
       - name: Install
+        # `postinstall` runs `prisma generate` automatically (via the
+        # postinstall script in package.json + pnpm.onlyBuiltDependencies
+        # allowlist) so the @prisma/client types resolve from this point
+        # forward. The explicit `pnpm db:generate` step below is a
+        # belt-and-braces safety net.
         run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm db:generate
 
       - name: Lint
         run: pnpm lint
@@ -60,9 +68,6 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
-
-      - name: Prisma generate
-        run: pnpm db:generate
 
       - name: Apply migrations
         run: pnpm db:migrate:deploy
