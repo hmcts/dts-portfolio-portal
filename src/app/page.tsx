@@ -2,14 +2,19 @@ import { Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
-import { Card } from "@/components/ui/card";
+import { RoadmapMatrix } from "@/components/roadmap-matrix";
+import { ActivityFeed } from "@/components/activity-feed";
+import { getActivity, getMatrix } from "@/lib/portal-data";
 
-// Phase 1 foundation home page. Renders the AppShell + PageHeader +
-// placeholder Section showing the visual primitives in production
-// context. The roadmap matrix and recent-activity feed wire up in the
-// pages chunk (1.9+).
+// Home page per requirements spec §5.2. Cross-DTS roadmap matrix
+// grouped by Jurisdiction, with the first Jurisdiction's band
+// expanded; followed by the "latest approved changes" activity feed
+// pulled from the audit log.
 
 export default function HomePage() {
+  const matrix = getMatrix();
+  const activity = getActivity();
+
   return (
     <div className="mx-auto max-w-[1100px]">
       <PageHeader
@@ -33,13 +38,26 @@ export default function HomePage() {
       <Section
         eyebrow="Cross-DTS roadmap"
         heading="Now, next, later — across every Jurisdiction"
+        actions={
+          <>
+            <span className="text-[var(--color-muted)]">Jump to:</span>
+            {matrix.map((band) => (
+              <a
+                key={band.jurisdiction.slug}
+                href={`#band-${band.jurisdiction.slug}`}
+                className="rounded-[var(--radius-pill)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-[13px] hover:bg-[var(--color-surface-sunk)]"
+              >
+                {band.jurisdiction.name}
+              </a>
+            ))}
+          </>
+        }
       >
-        <Card>
-          <p className="text-[var(--color-muted)]">
-            The roadmap matrix lands in the pages chunk (Phase 1 task 1.9).
-            See <code>docs/superpowers/plans/2026-05-15-dts-portfolio-portal.md</code> for the task list.
-          </p>
-        </Card>
+        <RoadmapMatrix bands={matrix} />
+      </Section>
+
+      <Section eyebrow="Recent activity" heading="Latest approved changes across DTS">
+        <ActivityFeed entries={activity} />
       </Section>
     </div>
   );
