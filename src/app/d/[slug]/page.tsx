@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Card } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { StatusPill } from "@/components/ui/status-pill";
 import { ProductCardModal } from "@/components/product-card-modal";
+import { TeamCardModal } from "@/components/team-card-modal";
 import {
   getDomainBySlug,
   getInitiativesForProduct,
@@ -90,21 +90,34 @@ export default async function DomainPage({
           {teams.map((t) => {
             const productsForT = products.filter((p) => p.operatingTeamSlug === t.slug);
             return (
-              <Link key={t.slug} href={`/t/${t.slug}`} className="group">
-                <Card className="h-full transition-colors group-hover:border-[var(--color-border-strong)]">
-                  <div className="text-[15px] font-medium text-[var(--color-ink)]">
-                    {t.name}
-                  </div>
-                  {t.description ? (
-                    <p className="mt-1.5 line-clamp-3 text-[13px] text-[var(--color-muted)]">
-                      {t.description}
-                    </p>
-                  ) : null}
-                  <div className="mt-3 text-[12px] text-[var(--color-muted)]">
-                    {productsForT.length} {productsForT.length === 1 ? "Product" : "Products"} operated
-                  </div>
-                </Card>
-              </Link>
+              <TeamCardModal
+                key={t.slug}
+                team={t}
+                domain={domain}
+                jurisdiction={jurisdiction}
+                products={productsForT}
+                trigger={
+                  <button
+                    type="button"
+                    className="group block text-left"
+                    aria-label={`Open ${t.name} details`}
+                  >
+                    <Card className="h-full transition-colors group-hover:border-[var(--color-border-strong)]">
+                      <div className="text-[15px] font-medium text-[var(--color-ink)]">
+                        {t.name}
+                      </div>
+                      {t.description ? (
+                        <p className="mt-1.5 line-clamp-3 text-[13px] text-[var(--color-muted)]">
+                          {t.description}
+                        </p>
+                      ) : null}
+                      <div className="mt-3 text-[12px] text-[var(--color-muted)]">
+                        {productsForT.length} {productsForT.length === 1 ? "Product" : "Products"} operated
+                      </div>
+                    </Card>
+                  </button>
+                }
+              />
             );
           })}
         </div>
