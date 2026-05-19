@@ -1,0 +1,57 @@
+name: SBOM
+
+# CycloneDX SBOM via @cyclonedx/cdxgen. Adapted from hmcts/courtstranscribe
+# (single-app instead of frontend/backend split). Runs on PR + weekly cron.
+
+on:
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '48 6 * * 4' # Thursday 06:48 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    name: CycloneDX SBOM (Node / pnpm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install (frozen, no scripts)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Generate CycloneDX SBOM
+        # --required-only excludes devDependencies so the SBOM matches
+        # what ships in the production image (the standalone build only
+        # pulls runtime deps).
+        run: |
+          npx --yes @cyclonedx/cdxgen \
+            -t pnpm \
+            --required-only \
+            --spec-version 1.5 \
+            -o sbom.cdx.json \
+            .
+
+      - name: Log SBOM hash
+        run: sha256sum sbom.cdx.json
+
+      - name: Upload SBOM artefact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sbom
+          path: sbom.cdx.json
+          retention-days: 90

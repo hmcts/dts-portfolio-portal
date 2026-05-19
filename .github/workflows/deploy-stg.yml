@@ -1,0 +1,65 @@
+name: Deploy Staging
+
+# Fires when a GitHub release is published. Builds a fresh image at
+# the release version, pushes to ACR, pushes a `deploy-stg-<version>-
+# <run_id>` git tag, then fires the gated cross-repo dispatch.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  checks: read
+  actions: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/ci-build-images.yml
+    secrets: inherit
+
+  tag-and-dispatch:
+    needs: build
+    if: needs.build.outputs.image_pushed == 'true'
+    runs-on: ubuntu-latest
+    environment: stg
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Push deploy-stg tag
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          TAG="deploy-stg-${VERSION}-${RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Deploy ${VERSION} to stg (run ${RUN_ID})"
+          git push origin "${TAG}"
+          echo "Pushed deploy tag: ${TAG}"
+
+      - name: Attach CHANGELOG to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh run download "${{ github.run_id }}" -n changelog || true
+          if [[ -f CHANGELOG.md ]]; then
+            gh release upload "${RELEASE_TAG}" CHANGELOG.md --clobber
+          fi
+
+      - name: Trigger infra repo deploy
+        if: vars.INFRA_DISPATCH_ENABLED == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+          repository: ${{ vars.INFRA_DISPATCH_TARGET_REPO }}
+          event-type: deploy-stg
+          client-payload: |
+            {
+              "version": "${{ needs.build.outputs.version }}",
+              "image_tag": "${{ needs.build.outputs.version }}",
+              "run_id": "${{ github.run_id }}"
+            }

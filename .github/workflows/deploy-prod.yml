@@ -1,0 +1,84 @@
+name: Deploy Production
+
+# Manual prod promotion. Operator picks a release version that has
+# already been built and pushed to ACR by a successful stg deploy.
+# Does NOT rebuild — only validates the image exists, then pushes a
+# `deploy-prod-<version>-<run_id>` tag and fires the gated dispatch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to promote (e.g. 0.1.4 or v0.1.4). Must already be in ACR from a stg deploy.'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  ACR_NAME: hmctsprod.azurecr.io
+  IMAGE_NAME: dts/dts-portfolio-portal
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Normalise version (strip leading v)
+        id: ver
+        run: |
+          VERSION="${{ inputs.version }}"
+          VERSION="${VERSION#v}"
+          if [[ -z "${VERSION}" ]]; then
+            echo "Empty version" >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: ACR login
+        run: |
+          echo "${{ secrets.HMCTSPROD_REGISTRY_PASSWORD }}" \
+            | docker login "${ACR_NAME}" \
+                -u "${{ secrets.HMCTSPROD_REGISTRY_USERNAME }}" \
+                --password-stdin
+
+      - name: Verify image exists in ACR
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          REF="${ACR_NAME}/${IMAGE_NAME}:${VERSION}"
+          echo "Checking ${REF}"
+          if ! docker manifest inspect "${REF}" >/dev/null 2>&1; then
+            echo "Image ${REF} not found in ACR. Did stg deploy run for this version?" >&2
+            exit 1
+          fi
+          echo "✓ Image present"
+
+      - name: Push deploy-prod tag
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          TAG="deploy-prod-${VERSION}-${RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Deploy ${VERSION} to prod (run ${RUN_ID})"
+          git push origin "${TAG}"
+          echo "Pushed deploy tag: ${TAG}"
+
+      - name: Trigger infra repo deploy
+        if: vars.INFRA_DISPATCH_ENABLED == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+          repository: ${{ vars.INFRA_DISPATCH_TARGET_REPO }}
+          event-type: deploy-prod
+          client-payload: |
+            {
+              "version": "${{ steps.ver.outputs.version }}",
+              "image_tag": "${{ steps.ver.outputs.version }}",
+              "run_id": "${{ github.run_id }}"
+            }

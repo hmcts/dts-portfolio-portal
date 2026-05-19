@@ -1,0 +1,72 @@
+name: Deploy Dev
+
+# Continuous delivery to dev. PRs to main build the image (push: false)
+# for Dockerfile validation. Pushes to main build, push to ACR, push a
+# `deploy-dev-<version>-<run_id>` git tag, then fire `repository_dispatch`
+# against the infra repo so Terraform applies + App Service swap.
+#
+# The cross-repo dispatch is gated by `INFRA_DISPATCH_ENABLED` (repo
+# variable, default `false`) so the chain stays dormant until the
+# Azure estate is provisioned. See ADR-009 and ADR-010.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+  actions: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/ci-build-images.yml
+    secrets: inherit
+
+  tag-and-dispatch:
+    needs: build
+    if: needs.build.outputs.image_pushed == 'true'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Push deploy-dev tag
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if [[ -z "${VERSION}" ]]; then
+            echo "No version output from build job" >&2
+            exit 1
+          fi
+          TAG="deploy-dev-${VERSION}-${RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Deploy ${VERSION} to dev (run ${RUN_ID})"
+          git push origin "${TAG}"
+          echo "Pushed deploy tag: ${TAG}"
+
+      - name: Trigger infra repo deploy
+        if: vars.INFRA_DISPATCH_ENABLED == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+          repository: ${{ vars.INFRA_DISPATCH_TARGET_REPO }}
+          event-type: deploy-dev
+          client-payload: |
+            {
+              "version": "${{ needs.build.outputs.version }}",
+              "image_tag": "${{ needs.build.outputs.version }}",
+              "run_id": "${{ github.run_id }}"
+            }
+
+      - name: Note dispatch disabled
+        if: vars.INFRA_DISPATCH_ENABLED != 'true'
+        run: |
+          echo "::notice title=Infra dispatch dormant::INFRA_DISPATCH_ENABLED is not 'true' — flip it on once the Azure estate is provisioned (see docs/runbooks/bootstrap-infra-repo.md once that lands)."

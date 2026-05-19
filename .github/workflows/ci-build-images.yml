@@ -1,0 +1,130 @@
+name: CI Build Image
+
+# Reusable workflow called by deploy-dev / deploy-stg / deploy-prod.
+# Computes the artefact version, generates the CHANGELOG via git-cliff,
+# builds the Docker image, and (except on pull_request) pushes it to
+# HMCTS ACR.
+#
+# Adapted from hmcts/courtstranscribe — collapsed from the frontend +
+# backend split into a single image.
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: Computed artefact version for this run.
+        value: ${{ jobs.version.outputs.version }}
+      image_pushed:
+        description: True when the image was built and pushed to ACR.
+        value: ${{ jobs.build-status.outputs.image_pushed }}
+
+permissions:
+  contents: read
+  checks: read
+  actions: read
+
+env:
+  ACR_NAME: hmctsprod.azurecr.io
+  IMAGE_NAME: dts/dts-portfolio-portal
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pick.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - id: artefact
+        uses: hmcts/artefact-version-action@v1
+        with:
+          release: ${{ github.event_name == 'release' }}
+
+      - id: pick
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "version=${{ steps.artefact.outputs.release_version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ steps.artefact.outputs.draft_version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - run: echo "::notice title=Artefact Version::${{ steps.pick.outputs.version }}"
+
+      - name: Generate CHANGELOG (release)
+        if: github.event_name == 'release'
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header --output CHANGELOG.md
+
+      - name: Write draft CHANGELOG placeholder
+        if: github.event_name != 'release'
+        env:
+          VERSION: ${{ steps.pick.outputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          cat > CHANGELOG.md <<EOF
+          # Draft build ${VERSION}
+
+          This image was built from a non-release event (\`${EVENT_NAME}\`).
+          For the canonical changelog, see the latest published release on GitHub.
+          EOF
+
+      - name: Upload CHANGELOG artefact
+        uses: actions/upload-artifact@v7
+        with:
+          name: changelog
+          path: CHANGELOG.md
+          if-no-files-found: error
+          retention-days: 7
+
+  build:
+    needs: version
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download CHANGELOG
+        uses: actions/download-artifact@v8
+        with:
+          name: changelog
+
+      - name: Build (and push) image
+        uses: hmcts/cnp-githubactions-library/container-build-push@main
+        with:
+          registry: ${{ env.ACR_NAME }}
+          registry-username: ${{ secrets.HMCTSPROD_REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.HMCTSPROD_REGISTRY_PASSWORD }}
+          image-name: ${{ env.IMAGE_NAME }}
+          image-tags: |
+            ${{ needs.version.outputs.version }}
+          context: .
+          dockerfile: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            VERSION=${{ needs.version.outputs.version }}
+
+  build-status:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      image_pushed: ${{ steps.compute.outputs.image_pushed }}
+    steps:
+      - id: compute
+        shell: bash
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "${BUILD_RESULT}" == "success" && "${EVENT_NAME}" != "pull_request" ]]; then
+            echo "image_pushed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_pushed=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Build:    ${BUILD_RESULT}"
+          echo "Event:    ${EVENT_NAME}"

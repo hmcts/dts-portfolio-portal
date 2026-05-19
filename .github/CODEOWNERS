@@ -1,0 +1,26 @@
+# CODEOWNERS for the DTS Portfolio Portal.
+#
+# Reviews from owners are required for the scoped paths before a PR
+# can merge to main (per the branch protection ruleset).
+#
+# Update the team handles when the portal is handed to a specific
+# HMCTS-DTS squad. Placeholder uses the @hmcts/dts-portfolio-portal-
+# maintainers team — replace once the owning team is named.
+
+# Default — everything not scoped below
+*                                       @hmcts/dts-portfolio-portal-maintainers
+
+# Architectural decisions need ADR-owner sign-off
+/docs/decisions/                        @hmcts/dts-portfolio-portal-maintainers
+/docs/superpowers/specs/                @hmcts/dts-portfolio-portal-maintainers
+/docs/superpowers/plans/                @hmcts/dts-portfolio-portal-maintainers
+
+# CI / deploy chain — keep change history obvious
+/.github/                               @hmcts/dts-portfolio-portal-maintainers
+/Dockerfile                             @hmcts/dts-portfolio-portal-maintainers
+/docker-compose.yml                     @hmcts/dts-portfolio-portal-maintainers
+
+# Stack-level config
+/package.json                           @hmcts/dts-portfolio-portal-maintainers
+/pnpm-lock.yaml                         @hmcts/dts-portfolio-portal-maintainers
+/prisma/                                @hmcts/dts-portfolio-portal-maintainers

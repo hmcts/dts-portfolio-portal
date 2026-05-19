@@ -1,0 +1,67 @@
+name: DB migration check
+
+# Adapted from hmcts/courtstranscribe's Alembic check. Boots a Postgres
+# service, applies all Prisma migrations, then asserts the schema is in
+# sync. Catches "schema changed but no migration file" PRs.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "prisma/**"
+      - "src/lib/entities.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration-check:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: portal
+          POSTGRES_PASSWORD: portal
+          POSTGRES_DB: portal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U portal -d portal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://portal:portal@localhost:5432/portal?schema=public
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        run: pnpm db:migrate:deploy
+
+      - name: Verify schema is in sync
+        run: |
+          status=$(pnpm db:migrate:status 2>&1)
+          echo "$status"
+          if echo "$status" | grep -q "Database schema is up to date"; then
+            echo "✓ Migrations applied cleanly and schema is in sync"
+          else
+            echo "✗ Prisma reports schema drift — generate a migration with 'pnpm db:migrate:dev'"
+            exit 1
+          fi
