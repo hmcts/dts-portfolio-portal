@@ -4,6 +4,7 @@ const config: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
   poweredByHeader: false,
+  devIndicators: false,
 };
 
 export default config;

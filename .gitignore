@@ -87,6 +87,11 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
+# --- Prototype render output (regenerable; not committed) ---
+docs/prototype/rendered.html
+docs/prototype/rendered.png
+docs/prototype/computed-tokens.json
+
 # --- Local scratch ---
 tmp/
 temp/
