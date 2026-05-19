@@ -54,19 +54,34 @@ Spec sections, prior art, related ADRs.
 
 ## Phase 0 backlog
 
-Per the implementation plan, Phase 0 ratifies these ten ADRs from the locked decisions captured in [`../superpowers/specs/2026-05-19-azure-stack-design.md`](../superpowers/specs/2026-05-19-azure-stack-design.md):
+Per the implementation plan, Phase 0 ratifies these ten ADRs from the locked decisions captured in [`../superpowers/specs/2026-05-19-azure-stack-design.md`](../superpowers/specs/2026-05-19-azure-stack-design.md). All ten were authored and signed off on 2026-05-19.
 
-| ADR | Topic | Locked recommendation |
-|---|---|---|
-| ADR-001 | Web framework and rendering | Next.js (App Router) + React + TypeScript |
-| ADR-002 | Content store and ORM | Azure Database for PostgreSQL Flexible Server; Prisma + Prisma Migrate |
-| ADR-003 | AI parser | Azure OpenAI |
-| ADR-004 | Search backend | Postgres full-text search |
-| ADR-005 | Authentication provider | Easy Auth → Microsoft Entra ID |
-| ADR-006 | Hosting and deployment | App Service for Linux (Web App for Containers); image in HMCTS ACR; Front Door in front |
-| ADR-007 | Visual language tooling | Tailwind CSS + shadcn/ui + Lucide + Geist |
-| ADR-008 | Platform services | Key Vault + App Insights + Log Analytics + Front Door; managed-identity-only RBAC |
-| ADR-009 | Repository topology | Two repos: public app, internal-visibility infra; cross-repo dispatch |
-| ADR-010 | Deploy pipeline | All-GHA in v1 (courtstranscribe pattern adapted); ADO deferred; gated cross-repo dispatch |
+| ADR | Topic | Status | File |
+|---|---|---|---|
+| ADR-001 | Web framework and rendering | Accepted | [`2026-05-19-adr-001-web-framework.md`](2026-05-19-adr-001-web-framework.md) |
+| ADR-002 | Content store and ORM | Accepted | [`2026-05-19-adr-002-content-store.md`](2026-05-19-adr-002-content-store.md) |
+| ADR-003 | AI parser | Accepted | [`2026-05-19-adr-003-ai-parser.md`](2026-05-19-adr-003-ai-parser.md) |
+| ADR-004 | Search backend | Accepted | [`2026-05-19-adr-004-search-backend.md`](2026-05-19-adr-004-search-backend.md) |
+| ADR-005 | Authentication provider | Accepted | [`2026-05-19-adr-005-authentication.md`](2026-05-19-adr-005-authentication.md) |
+| ADR-006 | Hosting and deployment | Accepted | [`2026-05-19-adr-006-hosting.md`](2026-05-19-adr-006-hosting.md) |
+| ADR-007 | Visual language tooling | Accepted | [`2026-05-19-adr-007-visual-language.md`](2026-05-19-adr-007-visual-language.md) |
+| ADR-008 | Platform services | Accepted | [`2026-05-19-adr-008-platform-services.md`](2026-05-19-adr-008-platform-services.md) |
+| ADR-009 | Repository topology | Accepted | [`2026-05-19-adr-009-repo-topology.md`](2026-05-19-adr-009-repo-topology.md) |
+| ADR-010 | Deploy pipeline | Accepted | [`2026-05-19-adr-010-deploy-pipeline.md`](2026-05-19-adr-010-deploy-pipeline.md) |
 
 ADR-011 onward will be assigned as later decisions arise.
+
+## Phase 0 sign-off
+
+Recorded here for traceability. Names and roles of the people who reviewed each ADR before Phase 1 begins.
+
+- ADR-001 — _name, role, date_
+- ADR-002 — _name, role, date_
+- ADR-003 — _name, role, date_
+- ADR-004 — _name, role, date_
+- ADR-005 — _name, role, date_
+- ADR-006 — _name, role, date_
+- ADR-007 — _name, role, date_
+- ADR-008 — _name, role, date_
+- ADR-009 — _name, role, date_
+- ADR-010 — _name, role, date_
