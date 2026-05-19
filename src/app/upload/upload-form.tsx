@@ -73,13 +73,17 @@ export function UploadForm() {
           <p className="text-[14px] font-medium text-[var(--color-ink)]">
             Drag a markdown file here, or browse
           </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            name="markdownFile"
-            accept=".md,.markdown,text/markdown,text/plain"
-            className="block max-w-full text-[13px] text-[var(--color-ink-soft)] file:mr-3 file:rounded-[var(--radius-pill)] file:border file:border-[var(--color-border-strong)] file:bg-[var(--color-surface)] file:px-3 file:py-1.5 file:text-[13px] file:font-medium file:text-[var(--color-ink)] hover:file:bg-[var(--color-surface-sunk)]"
-          />
+          <label className="block max-w-full text-[13px] text-[var(--color-ink-soft)]">
+            <span className="sr-only">Markdown file</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              name="markdownFile"
+              aria-label="Markdown file to upload"
+              accept=".md,.markdown,text/markdown,text/plain"
+              className="file:mr-3 file:rounded-[var(--radius-pill)] file:border file:border-[var(--color-border-strong)] file:bg-[var(--color-surface)] file:px-3 file:py-1.5 file:text-[13px] file:font-medium file:text-[var(--color-ink)] hover:file:bg-[var(--color-surface-sunk)]"
+            />
+          </label>
         </div>
       </Card>
 
