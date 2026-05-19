@@ -54,16 +54,19 @@ Spec sections, prior art, related ADRs.
 
 ## Phase 0 backlog
 
-Per the implementation plan, Phase 0 produces these seven ADRs:
+Per the implementation plan, Phase 0 ratifies these ten ADRs from the locked decisions captured in [`../superpowers/specs/2026-05-19-azure-stack-design.md`](../superpowers/specs/2026-05-19-azure-stack-design.md):
 
-| ADR | Topic |
-|---|---|
-| ADR-001 | Web framework and rendering |
-| ADR-002 | Content store |
-| ADR-003 | AI parser |
-| ADR-004 | Search backend |
-| ADR-005 | Authentication provider |
-| ADR-006 | Hosting and deployment |
-| ADR-007 | Visual language tooling |
+| ADR | Topic | Locked recommendation |
+|---|---|---|
+| ADR-001 | Web framework and rendering | Next.js (App Router) + React + TypeScript |
+| ADR-002 | Content store and ORM | Azure Database for PostgreSQL Flexible Server; Prisma + Prisma Migrate |
+| ADR-003 | AI parser | Azure OpenAI |
+| ADR-004 | Search backend | Postgres full-text search |
+| ADR-005 | Authentication provider | Easy Auth → Microsoft Entra ID |
+| ADR-006 | Hosting and deployment | App Service for Linux (Web App for Containers); image in HMCTS ACR; Front Door in front |
+| ADR-007 | Visual language tooling | Tailwind CSS + shadcn/ui + Lucide + Geist |
+| ADR-008 | Platform services | Key Vault + App Insights + Log Analytics + Front Door; managed-identity-only RBAC |
+| ADR-009 | Repository topology | Two repos: public app, internal-visibility infra; cross-repo dispatch |
+| ADR-010 | Deploy pipeline | All-GHA in v1 (courtstranscribe pattern adapted); ADO deferred; gated cross-repo dispatch |
 
-ADR-008 onward will be assigned as later decisions arise.
+ADR-011 onward will be assigned as later decisions arise.
