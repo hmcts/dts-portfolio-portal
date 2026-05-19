@@ -1,0 +1,62 @@
+version: 2
+
+# Dependabot for the three ecosystems this repo uses:
+# 1. npm (Node deps via pnpm)
+# 2. GitHub Actions (the workflows themselves)
+# 3. Docker (the base image in our Dockerfile)
+#
+# All grouped where they don't risk breaking changes, weekly schedule
+# so volume stays manageable.
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+      timezone: "Europe/London"
+    open-pull-requests-limit: 8
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      types:
+        patterns:
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint*"
+          - "prettier*"
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/*"
+      radix:
+        patterns:
+          - "@radix-ui/*"
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@playwright/*"
+          - "@testing-library/*"
+          - "@axe-core/*"
+          - "happy-dom"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+    commit-message:
+      prefix: "ci(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+    commit-message:
+      prefix: "chore(docker)"
