@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock, Cpu } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
@@ -8,6 +8,29 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { StatusPill } from "@/components/ui/status-pill";
 import { getSubmissionById } from "@/lib/audit-log/queries";
 import { ApprovalActions } from "./approval-actions";
+
+// Map the persisted aiParseSource string to a StatusPill descriptor.
+// Reviewers need to know whether AOAI or the strict-template fallback
+// produced the parse — when AOAI is offline the upload flow stays
+// open via the fallback (spec §7.5), so a banner is the only way a
+// human reviewer notices the degraded mode.
+type ParseSourcePill = {
+  tone: "blue" | "amber" | "grey";
+  label: string;
+};
+
+function parseSourcePill(source: string | null): ParseSourcePill {
+  switch (source) {
+    case "azure-openai":
+      return { tone: "blue", label: "Azure OpenAI" };
+    case "strict-template":
+      return { tone: "amber", label: "Strict template fallback" };
+    case "stub":
+      return { tone: "grey", label: "Test stub" };
+    default:
+      return { tone: "grey", label: "Unknown parser" };
+  }
+}
 
 // Approval detail screen per requirements spec §7.4. Split-pane
 // source-left, parsed-right; AI confidence flags surface as
@@ -60,6 +83,7 @@ export default async function ApprovalDetailPage({
     ? parsed.unrecognised
     : [];
   const alreadyApproved = submission.approver !== null;
+  const sourcePill = parseSourcePill(submission.aiParseSource);
 
   return (
     <div className="mx-auto max-w-[1200px]">
