@@ -4,9 +4,12 @@ name: Tests
 # up a service Postgres for Prisma so the e2e suite hits a real DB.
 
 on:
+  # Tests run on every PR as the merge gate. Re-running on push to
+  # main after a PR is merged is redundant — the same commits already
+  # passed on the PR — so the push trigger is intentionally omitted.
+  # workflow_dispatch is kept for the rare manual rerun (e.g. after
+  # a transient infra issue).
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
   workflow_dispatch:
 
