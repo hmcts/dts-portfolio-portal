@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#faf9f5",
 };
 
 export default function RootLayout({
@@ -17,8 +19,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en-GB">
-      <body>{children}</body>
+    <html
+      lang="en-GB"
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+    >
+      <body>
+        <a href="#main" className="skip-link">
+          Skip to main content
+        </a>
+        <div id="main">{children}</div>
+      </body>
     </html>
   );
 }
