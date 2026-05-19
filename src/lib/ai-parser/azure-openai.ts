@@ -4,6 +4,7 @@ import {
   getBearerTokenProvider,
 } from "@azure/identity";
 import { parseIdentity, IdentityParseError } from "@/lib/markdown/identity-parser";
+import { recordParseMetric } from "./metrics";
 import type {
   AiParser,
   AiParseResult,
@@ -88,6 +89,7 @@ export class AzureOpenAIParser implements AiParser {
   }
 
   async parse(rawMarkdown: string): Promise<AiParseResult> {
+    const startedAt = Date.now();
     // Run identity parse first — if the front-matter is malformed,
     // there's no point asking the model to guess what kind of entity
     // this is. Same failure shape as TemplateFallbackParser.
@@ -104,6 +106,13 @@ export class AzureOpenAIParser implements AiParser {
           : err instanceof Error
             ? err.message
             : String(err);
+      fireAndForgetRecord({
+        source: "azure-openai",
+        outcome: "failure",
+        latencyMs: Date.now() - startedAt,
+        model: this.deployment,
+        failureReason: reason,
+      });
       return { ok: false, source: "azure-openai", reason };
     }
 
@@ -132,8 +141,19 @@ export class AzureOpenAIParser implements AiParser {
         temperature: 0,
       });
 
+      const usage = response.usage;
       const content = response.choices[0]?.message?.content;
       if (!content) {
+        fireAndForgetRecord({
+          source: "azure-openai",
+          outcome: "failure",
+          latencyMs: Date.now() - startedAt,
+          model: this.deployment,
+          promptTokens: usage?.prompt_tokens,
+          completionTokens: usage?.completion_tokens,
+          totalTokens: usage?.total_tokens,
+          failureReason: "Model returned no content",
+        });
         return {
           ok: false,
           source: "azure-openai",
@@ -149,18 +169,40 @@ export class AzureOpenAIParser implements AiParser {
       try {
         parsed = JSON.parse(content);
       } catch (err) {
+        const reason = `Model response was not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
+        fireAndForgetRecord({
+          source: "azure-openai",
+          outcome: "failure",
+          latencyMs: Date.now() - startedAt,
+          model: this.deployment,
+          promptTokens: usage?.prompt_tokens,
+          completionTokens: usage?.completion_tokens,
+          totalTokens: usage?.total_tokens,
+          failureReason: reason,
+        });
         return {
           ok: false,
           source: "azure-openai",
-          reason: `Model response was not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+          reason,
         };
       }
 
       if (!parsed.output || typeof parsed.output !== "object") {
+        const reason = "Model response missing 'output' field";
+        fireAndForgetRecord({
+          source: "azure-openai",
+          outcome: "failure",
+          latencyMs: Date.now() - startedAt,
+          model: this.deployment,
+          promptTokens: usage?.prompt_tokens,
+          completionTokens: usage?.completion_tokens,
+          totalTokens: usage?.total_tokens,
+          failureReason: reason,
+        });
         return {
           ok: false,
           source: "azure-openai",
-          reason: "Model response missing 'output' field",
+          reason,
         };
       }
 
@@ -174,6 +216,16 @@ export class AzureOpenAIParser implements AiParser {
           ? { kind, about: (parsed.output as { about?: string }).about }
           : { kind, body: parsed.output as never };
 
+      fireAndForgetRecord({
+        source: "azure-openai",
+        outcome: "success",
+        latencyMs: Date.now() - startedAt,
+        model: this.deployment,
+        promptTokens: usage?.prompt_tokens,
+        completionTokens: usage?.completion_tokens,
+        totalTokens: usage?.total_tokens,
+      });
+
       return {
         ok: true,
         source: "azure-openai",
@@ -183,11 +235,34 @@ export class AzureOpenAIParser implements AiParser {
         unrecognised: parsed.unrecognised ?? [],
       };
     } catch (err) {
+      const reason = `Azure OpenAI request failed: ${err instanceof Error ? err.message : String(err)}`;
+      fireAndForgetRecord({
+        source: "azure-openai",
+        outcome: "failure",
+        latencyMs: Date.now() - startedAt,
+        model: this.deployment,
+        failureReason: reason,
+      });
       return {
         ok: false,
         source: "azure-openai",
-        reason: `Azure OpenAI request failed: ${err instanceof Error ? err.message : String(err)}`,
+        reason,
       };
     }
   }
+}
+
+// Wraps recordParseMetric so a metric-insert failure can never reject
+// the parse() promise. Errors are surfaced via console.warn so they
+// don't disappear silently — observability picks them up.
+function fireAndForgetRecord(
+  ...args: Parameters<typeof recordParseMetric>
+): void {
+  recordParseMetric(...args).catch((err) => {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[ai-parser] recordParseMetric failed:",
+      err instanceof Error ? err.message : String(err),
+    );
+  });
 }
