@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,6 +12,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+
+// localStorage key for persisting the expanded-state of each
+// jurisdiction's domain list. Stable across releases so users keep
+// their choice. Read-after-mount and write-on-change keeps the SSR
+// render deterministic ("Crime expanded" matches the prototype).
+const SIDEBAR_STORAGE_KEY = "dts-portal:sidebar:jurisdictions";
 
 // Fixed jurisdiction taxonomy per requirements spec §3.2. The domain
 // list under each is wired to live data once seed lands in 1.6; for now
@@ -91,6 +97,37 @@ export function Sidebar() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     crime: true,
   });
+
+  // Rehydrate from localStorage after first render. Done in an effect
+  // so the SSR-rendered markup matches the client's first paint —
+  // see CLAUDE.md note on SSR safety.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, boolean>;
+        if (parsed && typeof parsed === "object") {
+          setExpanded((prev) => ({ ...prev, ...parsed }));
+        }
+      }
+    } catch {
+      // localStorage disabled or value corrupt — fall back to defaults.
+    }
+  }, []);
+
+  // Persist on every change. Wrapped in try/catch because Safari
+  // private-mode and storage quotas can throw.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        SIDEBAR_STORAGE_KEY,
+        JSON.stringify(expanded),
+      );
+    } catch {
+      // Ignore — in-memory state still works for this session.
+    }
+  }, [expanded]);
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
