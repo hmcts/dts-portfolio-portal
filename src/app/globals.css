@@ -1,30 +1,58 @@
 @import "tailwindcss";
 
-/* Design tokens for the portal's calm, near-monochrome visual language.
-   See requirements spec §6.6 and ADR-007. Token names map to Tailwind
-   utility classes via the `@theme` block. Status palette mirrors the
-   spec's green/amber/red/blue/grey set; colour is never load-bearing
-   on its own — every status carries an icon or label. */
+/* Design tokens lifted directly from the standalone prototype at
+   docs/prototype/. Values cross-checked via Playwright extraction in
+   scripts/extract-prototype.mjs. ADR-007 + requirements spec §6.6. */
 
 @theme {
-  /* Colours tuned for WCAG 2.2 AA on the canvas: every foreground that
-     can appear as body text passes the 4.5:1 contrast ratio against the
-     canvas (#faf9f5). `ink-soft` is reserved for non-text uses or large
-     text (3:1) — never for body text. */
-  --color-canvas: #faf9f5;
+  /* warm stones */
+  --color-canvas: #f7f6f3;
   --color-surface: #ffffff;
-  --color-ink: #1a1a1a;
-  --color-ink-muted: #595959;
-  --color-ink-soft: #767676;
-  --color-hairline: #d8d6cf;
+  --color-surface-sunk: #f3f1ec;
+  --color-border: #e6e2d9;
+  --color-border-strong: #d7d2c4;
+  --color-ink: #1c1917;
+  --color-ink-soft: #3d3a36;
+  --color-muted: #6b6760;
+  --color-muted-2: #8a857d;
 
-  --color-status-green: #166534;
-  --color-status-amber: #92400e;
-  --color-status-red: #991b1b;
-  --color-status-blue: #1d4ed8;
-  --color-status-grey: #595959;
+  /* GDS yellow focus ring per gov.uk design system */
+  --color-focus: #ffdd00;
+  --color-focus-edge: #0b0c0c;
+
+  /* NOW / NEXT / LATER chip tints */
+  --color-now-bg: #fdf6e3;
+  --color-now-fg: #7a4f00;
+  --color-now-edge: #e7c46a;
+  --color-next-bg: #eaf1fb;
+  --color-next-fg: #1d4a87;
+  --color-next-edge: #b9cdec;
+  --color-later-bg: #efece5;
+  --color-later-fg: #5a554c;
+  --color-later-edge: #d6d0c2;
+
+  /* Product stage pills */
+  --color-stage-live-bg: #e6f3ea;
+  --color-stage-live-fg: #1f5a36;
+  --color-stage-beta-bg: #efe7f7;
+  --color-stage-beta-fg: #5a2d8a;
+  --color-stage-discovery-bg: #e9eef7;
+  --color-stage-discovery-fg: #2a3f72;
+  --color-stage-alpha-bg: #fbecd7;
+  --color-stage-alpha-fg: #7a4f00;
+  --color-stage-retired-bg: #ecebe7;
+  --color-stage-retired-fg: #57534e;
+
+  /* AI confidence flags (Phase 2 approval screen) */
+  --color-conf-high-bg: #e6f3ea;
+  --color-conf-high-fg: #1f5a36;
+  --color-conf-med-bg: #fdf6e3;
+  --color-conf-med-fg: #7a4f00;
+  --color-conf-low-bg: #faeae6;
+  --color-conf-low-fg: #8b2a16;
 
   --radius-card: 14px;
+  --radius-input: 10px;
   --radius-pill: 9999px;
 
   --font-sans:
@@ -41,6 +69,19 @@ body {
   font-family: var(--font-sans);
 }
 
+/* GDS-style focus ring: yellow fill with black underline for high
+   contrast against any background. Used everywhere instead of the
+   browser default outline. */
+*:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 0;
+  box-shadow: 0 4px 0 0 var(--color-focus-edge);
+}
+
+button:focus-visible {
+  outline-offset: 1px;
+}
+
 /* Skip-to-main-content link for keyboard users — spec §8.1. */
 .skip-link {
   position: absolute;
@@ -52,6 +93,6 @@ body {
   z-index: 100;
   padding: 0.5rem 0.75rem;
   background: var(--color-surface);
-  border: 1px solid var(--color-hairline);
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
 }

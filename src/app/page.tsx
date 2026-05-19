@@ -1,23 +1,46 @@
+import { Users, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { Section } from "@/components/ui/section";
+import { Card } from "@/components/ui/card";
+
+// Phase 1 foundation home page. Renders the AppShell + PageHeader +
+// placeholder Section showing the visual primitives in production
+// context. The roadmap matrix and recent-activity feed wire up in the
+// pages chunk (1.9+).
+
 export default function HomePage() {
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16">
-      <p className="mb-2 text-xs uppercase tracking-wider text-[var(--color-ink-muted)]">
-        DTS Portfolio
-      </p>
-      <h1 className="font-sans text-4xl font-semibold tracking-tight text-[var(--color-ink)]">
-        DTS Portfolio Portal
-      </h1>
-      <p className="mt-3 max-w-2xl text-[var(--color-ink-muted)]">
-        A high-level front door over Ardoq, Jira, and Confluence for HMCTS DTS.
-        Scaffold up; pages land in subsequent commits.
-      </p>
-      <p className="mt-12 text-sm text-[var(--color-ink-muted)]">
-        Phase 1 foundation — see{" "}
-        <code className="rounded bg-[var(--color-surface)] px-1.5 py-0.5 font-mono text-[0.85em]">
-          docs/superpowers/plans/2026-05-15-dts-portfolio-portal.md
-        </code>
-        .
-      </p>
-    </main>
+    <div className="mx-auto max-w-[1100px]">
+      <PageHeader
+        eyebrow="HMCTS · Digital and Technology Services"
+        title="What DTS is building, who runs it, and what's next."
+        lede="One place to see the DTS landscape across all five Jurisdictions. Open a Domain to see who runs what. Click any chip on the roadmap to drill in. The detail still lives in Ardoq, Jira and Confluence — this is the front door."
+        actions={
+          <>
+            <Button variant="outline">
+              <Users size={14} aria-hidden="true" />
+              Your team
+            </Button>
+            <Button variant="primary">
+              <Plus size={14} aria-hidden="true" />
+              Add content
+            </Button>
+          </>
+        }
+      />
+
+      <Section
+        eyebrow="Cross-DTS roadmap"
+        heading="Now, next, later — across every Jurisdiction"
+      >
+        <Card>
+          <p className="text-[var(--color-muted)]">
+            The roadmap matrix lands in the pages chunk (Phase 1 task 1.9).
+            See <code>docs/superpowers/plans/2026-05-15-dts-portfolio-portal.md</code> for the task list.
+          </p>
+        </Card>
+      </Section>
+    </div>
   );
 }
