@@ -59,11 +59,21 @@ export async function processUpload(
   }
 
   const bytes = Buffer.from(input.raw, "utf8");
+  // Persist the full parse result so the approval screen has both
+  // the front-matter (name, type, parent ref) AND the parsed body
+  // (about / roadmap / etc) in one JSON payload. Keeping them
+  // together also matches the AiParseSuccess type the parser
+  // returns and the entityNameFromParsedOutput helper expects.
+  const persistedOutput = {
+    frontMatter: parseResult.frontMatter,
+    output: parseResult.output,
+    unrecognised: parseResult.unrecognised,
+  };
   const { id, sourceMarkdownSha } = await createSubmission({
     entityKind: parseResult.frontMatter.type,
     submitter: input.submitter,
     sourceMarkdown: bytes,
-    aiParsedOutput: parseResult.output as unknown as Prisma.InputJsonValue,
+    aiParsedOutput: persistedOutput as unknown as Prisma.InputJsonValue,
     aiConfidenceFlags: parseResult.confidence as unknown as Prisma.InputJsonValue,
   });
 

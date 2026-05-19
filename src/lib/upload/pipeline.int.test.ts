@@ -102,10 +102,14 @@ describe("processUpload pipeline", () => {
       where: { id: result.submissionId },
     });
     expect(row!.entityKind).toBe("product");
-    // The parsed output should carry the NOW/NEXT roadmap buckets
-    const parsed = row!.aiParsedOutput as { body?: { roadmap?: Record<string, unknown[]> } };
-    expect(parsed.body?.roadmap?.NOW).toBeDefined();
-    expect(parsed.body?.roadmap?.NEXT).toBeDefined();
+    // The parsed output should carry the NOW/NEXT roadmap buckets,
+    // nested under `output.body` per the persisted shape (frontMatter
+    // + output + unrecognised at the top level).
+    const parsed = row!.aiParsedOutput as {
+      output?: { body?: { roadmap?: Record<string, unknown[]> } };
+    };
+    expect(parsed.output?.body?.roadmap?.NOW).toBeDefined();
+    expect(parsed.output?.body?.roadmap?.NEXT).toBeDefined();
   });
 
   it("rejects empty input without touching the DB", async () => {
