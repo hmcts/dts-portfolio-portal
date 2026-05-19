@@ -75,6 +75,9 @@ jobs:
       - name: Unit tests (Vitest)
         run: pnpm test
 
+      - name: Integration tests (Vitest, against service Postgres)
+        run: pnpm test:int
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
