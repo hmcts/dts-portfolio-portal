@@ -14,7 +14,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Topbar />
         <main
           id="main"
-          tabIndex={-1}
+          tabIndex={0}
+          aria-label="Main content"
           className="flex-1 overflow-y-auto px-8 py-8"
         >
           {children}
