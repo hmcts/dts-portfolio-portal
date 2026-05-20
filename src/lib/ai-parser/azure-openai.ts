@@ -42,11 +42,48 @@ interface AzureOpenAIParserOptions {
   deployment: string;
   apiVersion?: string;
   apiKey?: string;
+  // Optional pre-built chat client. Production code never sets this
+  // (the real AzureOpenAI client is built lazily below). Tests can
+  // inject a hand-written stub conforming to ChatClient so they
+  // exercise every code path with deterministic responses.
+  client?: ChatClient;
+}
+
+// Structural interface for the part of the Azure OpenAI SDK this
+// parser actually uses. Keeping the surface narrow means a hand-
+// written test stub only has to implement one method. The real
+// `AzureOpenAI` class is assignable to this interface.
+export interface ChatClient {
+  chat: {
+    completions: {
+      create(args: ChatCompletionsCreateArgs): Promise<ChatCompletionResponse>;
+    };
+  };
+}
+
+interface ChatCompletionsCreateArgs {
+  model: string;
+  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
+  response_format?: { type: "json_object" };
+  temperature?: number;
+}
+
+interface ChatCompletionResponse {
+  choices: Array<{ message: { content: string | null } }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
 }
 
 export class AzureOpenAIParser implements AiParser {
   private readonly options: AzureOpenAIParserOptions;
-  private clientCache: AzureOpenAI | undefined;
+  private clientCache: ChatClient | undefined;
+  // Tail of the in-flight metric-write chain. Production code
+  // fire-and-forgets metric inserts; tests await this to assert
+  // the recording happened.
+  private metricChain: Promise<unknown> = Promise.resolve();
 
   constructor(options: AzureOpenAIParserOptions) {
     // Store options only — the actual AzureOpenAI client is built
@@ -55,9 +92,35 @@ export class AzureOpenAIParser implements AiParser {
     // construction time), so deferring the build keeps the test
     // suite from tripping that check just by importing the factory.
     this.options = options;
+    if (options.client) {
+      this.clientCache = options.client;
+    }
   }
 
-  private get client(): AzureOpenAI {
+  // Test helper. Returns a promise that resolves once every metric
+  // write fired off so far has settled. Not used in production.
+  async flushMetricsForTests(): Promise<void> {
+    await this.metricChain;
+  }
+
+  // Fire-and-forget metric write, tracked so tests can flush.
+  // A metric-insert failure must never reject parse() — the DB blip
+  // is logged for the platform's observability and otherwise swallowed.
+  private recordMetric(
+    ...args: Parameters<typeof recordParseMetric>
+  ): void {
+    const next = recordParseMetric(...args).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[ai-parser] recordParseMetric failed:",
+        err instanceof Error ? err.message : String(err),
+      );
+    });
+    // Track the tail so flushMetricsForTests() can await it.
+    this.metricChain = this.metricChain.then(() => next);
+  }
+
+  private get client(): ChatClient {
     if (this.clientCache) return this.clientCache;
     const { endpoint, deployment, apiKey } = this.options;
     const apiVersion = this.options.apiVersion ?? "2024-10-21";
@@ -106,7 +169,7 @@ export class AzureOpenAIParser implements AiParser {
           : err instanceof Error
             ? err.message
             : String(err);
-      fireAndForgetRecord({
+      this.recordMetric({
         source: "azure-openai",
         outcome: "failure",
         latencyMs: Date.now() - startedAt,
@@ -144,7 +207,7 @@ export class AzureOpenAIParser implements AiParser {
       const usage = response.usage;
       const content = response.choices[0]?.message?.content;
       if (!content) {
-        fireAndForgetRecord({
+        this.recordMetric({
           source: "azure-openai",
           outcome: "failure",
           latencyMs: Date.now() - startedAt,
@@ -170,7 +233,7 @@ export class AzureOpenAIParser implements AiParser {
         parsed = JSON.parse(content);
       } catch (err) {
         const reason = `Model response was not valid JSON: ${err instanceof Error ? err.message : String(err)}`;
-        fireAndForgetRecord({
+        this.recordMetric({
           source: "azure-openai",
           outcome: "failure",
           latencyMs: Date.now() - startedAt,
@@ -189,7 +252,7 @@ export class AzureOpenAIParser implements AiParser {
 
       if (!parsed.output || typeof parsed.output !== "object") {
         const reason = "Model response missing 'output' field";
-        fireAndForgetRecord({
+        this.recordMetric({
           source: "azure-openai",
           outcome: "failure",
           latencyMs: Date.now() - startedAt,
@@ -216,7 +279,7 @@ export class AzureOpenAIParser implements AiParser {
           ? { kind, about: (parsed.output as { about?: string }).about }
           : { kind, body: parsed.output as never };
 
-      fireAndForgetRecord({
+      this.recordMetric({
         source: "azure-openai",
         outcome: "success",
         latencyMs: Date.now() - startedAt,
@@ -236,7 +299,7 @@ export class AzureOpenAIParser implements AiParser {
       };
     } catch (err) {
       const reason = `Azure OpenAI request failed: ${err instanceof Error ? err.message : String(err)}`;
-      fireAndForgetRecord({
+      this.recordMetric({
         source: "azure-openai",
         outcome: "failure",
         latencyMs: Date.now() - startedAt,
@@ -252,17 +315,3 @@ export class AzureOpenAIParser implements AiParser {
   }
 }
 
-// Wraps recordParseMetric so a metric-insert failure can never reject
-// the parse() promise. Errors are surfaced via console.warn so they
-// don't disappear silently — observability picks them up.
-function fireAndForgetRecord(
-  ...args: Parameters<typeof recordParseMetric>
-): void {
-  recordParseMetric(...args).catch((err) => {
-    // eslint-disable-next-line no-console
-    console.warn(
-      "[ai-parser] recordParseMetric failed:",
-      err instanceof Error ? err.message : String(err),
-    );
-  });
-}
