@@ -62,11 +62,22 @@ function flagFields(result: StrictTemplateResult): ConfidenceFlags {
 }
 
 export class TemplateFallbackParser implements AiParser {
+  // Tail of the in-flight metric-write chain. Production code
+  // fire-and-forgets metric inserts; tests await this to assert
+  // the recording happened. Mirrors AzureOpenAIParser.
+  private metricChain: Promise<unknown> = Promise.resolve();
+
+  // Test helper. Returns a promise that resolves once every metric
+  // write fired off so far has settled. Not used in production.
+  async flushMetricsForTests(): Promise<void> {
+    await this.metricChain;
+  }
+
   async parse(rawMarkdown: string): Promise<AiParseResult> {
     const startedAt = Date.now();
     try {
       const result = parseStrictTemplate(rawMarkdown);
-      fireAndForgetRecord({
+      this.recordMetric({
         source: "strict-template",
         outcome: "success",
         latencyMs: Date.now() - startedAt,
@@ -91,7 +102,7 @@ export class TemplateFallbackParser implements AiParser {
           : err instanceof Error
             ? err.message
             : String(err);
-      fireAndForgetRecord({
+      this.recordMetric({
         source: "strict-template",
         outcome: "failure",
         latencyMs: Date.now() - startedAt,
@@ -104,18 +115,20 @@ export class TemplateFallbackParser implements AiParser {
       };
     }
   }
-}
 
-// Mirror of the same helper in azure-openai.ts. Keeps a metric write
-// from rejecting the parse() promise if the DB is briefly unreachable.
-function fireAndForgetRecord(
-  ...args: Parameters<typeof recordParseMetric>
-): void {
-  recordParseMetric(...args).catch((err) => {
-    // eslint-disable-next-line no-console
-    console.warn(
-      "[ai-parser] recordParseMetric failed:",
-      err instanceof Error ? err.message : String(err),
-    );
-  });
+  // Fire-and-forget metric write, tracked so tests can flush.
+  // A metric-insert failure must never reject parse() — the DB blip
+  // is logged for the platform's observability and otherwise swallowed.
+  private recordMetric(
+    ...args: Parameters<typeof recordParseMetric>
+  ): void {
+    const next = recordParseMetric(...args).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[ai-parser] recordParseMetric failed:",
+        err instanceof Error ? err.message : String(err),
+      );
+    });
+    this.metricChain = this.metricChain.then(() => next);
+  }
 }
