@@ -38,6 +38,11 @@ export default defineConfig({
     // §7.5 and Phase 2 task 2.14.
     env: {
       AI_PARSER_FORCE_FALLBACK: "true",
+      // Low daily-token budget so the /ops/ai-cost dashboard can be
+      // tested against the "exceeded" tone. The seed used by
+      // tests/e2e/ops-ai-cost.spec.ts inserts totals over this
+      // threshold. Production sets a realistic value via Key Vault.
+      AI_PARSE_BUDGET_TOKENS_PER_DAY: "100",
     },
   },
 });

@@ -6,8 +6,8 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import {
   getBudgetStatus,
   getDailyParseMetrics,
-  type DailyParseMetric,
 } from "@/lib/ai-parser/metrics";
+import { buildDayRows, summarise } from "./aggregations";
 
 // AI cost dashboard per Phase 2 task 2.13. Renders the last 14
 // days of AI parse activity broken down by source (Azure OpenAI vs
@@ -133,34 +133,6 @@ export default async function AiCostPage() {
       </Section>
     </div>
   );
-}
-
-function summarise(rows: DailyParseMetric[]): {
-  parses: number;
-  successes: number;
-  failures: number;
-  totalTokens: number;
-} {
-  return rows.reduce(
-    (acc, r) => ({
-      parses: acc.parses + r.parseCount,
-      successes: acc.successes + r.successCount,
-      failures: acc.failures + r.failureCount,
-      totalTokens: acc.totalTokens + r.totalTokens,
-    }),
-    { parses: 0, successes: 0, failures: 0, totalTokens: 0 },
-  );
-}
-
-// Sort by day desc, source asc — matches the SQL ORDER BY in the
-// metrics module. Doing it here too means a test that exercises the
-// page directly (without hitting the SQL ORDER BY) still sees a
-// stable, predictable row order.
-function buildDayRows(rows: DailyParseMetric[]): DailyParseMetric[] {
-  return [...rows].sort((a, b) => {
-    if (a.day !== b.day) return b.day.localeCompare(a.day);
-    return a.source.localeCompare(b.source);
-  });
 }
 
 function fmt(n: number): string {
