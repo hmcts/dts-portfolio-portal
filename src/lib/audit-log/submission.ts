@@ -56,6 +56,7 @@ export interface ApproveSubmissionInput {
   approver: string;
   versionNumber: number;
   notes?: string;
+  entityId?: string;
 }
 
 export async function approveSubmission(
@@ -68,6 +69,7 @@ export async function approveSubmission(
       approvedAt: new Date(),
       versionNumber: input.versionNumber,
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      ...(input.entityId !== undefined ? { entityId: input.entityId } : {}),
     },
   });
 }
