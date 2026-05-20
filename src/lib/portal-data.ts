@@ -94,7 +94,18 @@ export async function getMatrix(): Promise<MatrixJurisdictionBand[]> {
   jurisdictions.sort(bySpecOrder);
 
   return jurisdictions.map((j) => {
-    const rows: MatrixDomainRow[] = j.domains.map((d) => {
+    // Sort domains within a Jurisdiction by product count
+    // (descending), tie-break alphabetically. Matches the
+    // prototype's "busiest domain first" arrangement — without
+    // this, an alphabetical sort puts Case Preparation Domain
+    // (1 product) above Common Platform Domain (5 products).
+    const orderedDomains = [...j.domains].sort((a, b) => {
+      if (b.products.length !== a.products.length) {
+        return b.products.length - a.products.length;
+      }
+      return a.name.localeCompare(b.name);
+    });
+    const rows: MatrixDomainRow[] = orderedDomains.map((d) => {
       const initiativesForD = d.products.flatMap((p) => p.initiatives);
       return {
         domain: domainToSeedShape(d, j.slug),
