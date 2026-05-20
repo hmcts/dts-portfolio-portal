@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { recordSearchClick } from "@/lib/search/analytics";
+import { recordSearchClick, type RecordClickInput } from "@/lib/search/analytics";
 
 // POST handler for client-side search-click beacons.
 //
@@ -24,7 +24,14 @@ const ClickEventSchema = z.object({
   clickedPosition: z.number().int().min(0).max(100),
 });
 
-export async function POST(req: Request): Promise<Response> {
+// Core handler exposed for unit tests. The production POST() below
+// passes the real recordSearchClick; tests can pass a hand-written
+// recorder that throws (to exercise the swallow path) or records
+// invocations (to exercise the input passed through).
+export async function handleSearchEvent(
+  req: Request,
+  recordClick: (input: RecordClickInput) => Promise<void>,
+): Promise<Response> {
   let body: unknown;
   try {
     body = await req.json();
@@ -42,7 +49,7 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
   try {
-    await recordSearchClick({
+    await recordClick({
       query: parsed.data.query,
       clickedEntityType: parsed.data.clickedEntityType,
       clickedEntityId: parsed.data.clickedEntityId,
@@ -53,4 +60,8 @@ export async function POST(req: Request): Promise<Response> {
     // The platform's observability picks up the underlying DB error.
   }
   return new Response(null, { status: 204 });
+}
+
+export async function POST(req: Request): Promise<Response> {
+  return handleSearchEvent(req, recordSearchClick);
 }

@@ -8,6 +8,7 @@ import {
   getUnclickedQueries,
   getZeroResultQueries,
 } from "@/lib/search/analytics";
+import { computeCtr, formatCtr, summariseVolume } from "./aggregations";
 
 // Search relevance dashboard per Phase 3 task 3.7. Three sections:
 //
@@ -31,14 +32,8 @@ export default async function SearchAnalyticsPage() {
     getUnclickedQueries(DAYS_BACK),
   ]);
 
-  const totals = volume.reduce(
-    (acc, d) => ({
-      queries: acc.queries + d.queries,
-      clicks: acc.clicks + d.clicks,
-    }),
-    { queries: 0, clicks: 0 },
-  );
-  const ctr = totals.queries === 0 ? 0 : totals.clicks / totals.queries;
+  const totals = summariseVolume(volume);
+  const ctr = computeCtr(totals);
 
   return (
     <div className="mx-auto max-w-[1100px]">
@@ -55,7 +50,7 @@ export default async function SearchAnalyticsPage() {
             <Tile label="Result clicks" value={fmt(totals.clicks)} />
             <Tile
               label="Click-through rate"
-              value={`${(ctr * 100).toFixed(1)}%`}
+              value={formatCtr(ctr)}
               hint="Clicks per query, across all queries (including zero-result)."
             />
           </div>
