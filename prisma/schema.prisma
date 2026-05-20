@@ -150,6 +150,45 @@ model OutboundLink {
   @@index([productId])
 }
 
+// Per-parse metric record per Phase 2 task 2.13. One row written for
+// every AI parser invocation (Azure OpenAI or the strict-template
+// fallback), recording token usage, latency and outcome so the ops
+// cost dashboard can aggregate spend by day and flag budget breaches.
+//
+// Append-only: there is no scenario where an emitted metric should be
+// edited; the same DB-layer trigger applied to Submission also guards
+// this table (see migration).
+model AiParseMetric {
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  // The parser source — matches AiParseSource in src/lib/ai-parser/types.ts.
+  source            String
+  // The Azure deployment name when source = "azure-openai"; null otherwise.
+  model             String?
+  // "success" or "failure" — failures still record token usage because
+  // we get charged for partial completions and rate-limit errors.
+  outcome           String
+  // Token counts populated by Azure OpenAI from `response.usage`.
+  // Null for the strict-template path (no model call) and for failures
+  // where the model didn't reply at all.
+  promptTokens      Int?
+  completionTokens  Int?
+  totalTokens       Int?
+  // Wall-clock latency of the parse() call in milliseconds.
+  latencyMs         Int
+  // For failures: the AiParseFailure.reason string. Helps triage why
+  // a parse failed without joining back to Submission.
+  failureReason     String?
+  // Optional link to the audit-log row this parse belongs to. Null if
+  // the parse was speculative (e.g. a future "try-parse before
+  // upload" UX). Not a FK on purpose — submissions are append-only
+  // but a metric can outlive the submission it produced.
+  submissionId      String?
+
+  @@index([createdAt])
+  @@index([source, outcome])
+}
+
 // Append-only audit log. INSERT-only at the application layer; UPDATE
 // and DELETE revoked at the database layer in migrations. Tracks every
 // markdown upload + AI parse + approval event per spec §7.6.

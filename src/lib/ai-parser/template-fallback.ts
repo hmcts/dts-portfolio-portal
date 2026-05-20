@@ -5,6 +5,7 @@ import {
 import {
   IdentityParseError,
 } from "@/lib/markdown/identity-parser";
+import { recordParseMetric } from "./metrics";
 import type {
   AiParser,
   AiParseResult,
@@ -62,8 +63,14 @@ function flagFields(result: StrictTemplateResult): ConfidenceFlags {
 
 export class TemplateFallbackParser implements AiParser {
   async parse(rawMarkdown: string): Promise<AiParseResult> {
+    const startedAt = Date.now();
     try {
       const result = parseStrictTemplate(rawMarkdown);
+      fireAndForgetRecord({
+        source: "strict-template",
+        outcome: "success",
+        latencyMs: Date.now() - startedAt,
+      });
       return {
         ok: true,
         source: "strict-template",
@@ -84,6 +91,12 @@ export class TemplateFallbackParser implements AiParser {
           : err instanceof Error
             ? err.message
             : String(err);
+      fireAndForgetRecord({
+        source: "strict-template",
+        outcome: "failure",
+        latencyMs: Date.now() - startedAt,
+        failureReason: reason,
+      });
       return {
         ok: false,
         source: "strict-template",
@@ -91,4 +104,18 @@ export class TemplateFallbackParser implements AiParser {
       };
     }
   }
+}
+
+// Mirror of the same helper in azure-openai.ts. Keeps a metric write
+// from rejecting the parse() promise if the DB is briefly unreachable.
+function fireAndForgetRecord(
+  ...args: Parameters<typeof recordParseMetric>
+): void {
+  recordParseMetric(...args).catch((err) => {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[ai-parser] recordParseMetric failed:",
+      err instanceof Error ? err.message : String(err),
+    );
+  });
 }
