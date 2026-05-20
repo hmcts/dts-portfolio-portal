@@ -24,6 +24,16 @@ const ProductFrontMatter = z.object({
   type: z.literal("product"),
   name: z.string().min(1, "name must not be empty"),
   domain: z.string().min(1, "product must reference a parent domain"),
+  // Spec §7.7 said operating Team is set "at approve time, not in
+  // front-matter". Phase 2 simplification: accept it in front-matter
+  // so the seed migration (Task 2.11) can publish end-to-end without
+  // first building a team-picker UI on the approval screen. The
+  // picker can come later; until then, the slug-or-name reference
+  // here is canonical.
+  team: z.string().min(1).optional(),
+  stage: z
+    .enum(["discovery", "alpha", "beta", "live", "retiring", "retired"])
+    .optional(),
 });
 
 const DomainFrontMatter = z.object({

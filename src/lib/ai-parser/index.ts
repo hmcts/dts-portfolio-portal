@@ -8,22 +8,37 @@ export { TemplateFallbackParser } from "./template-fallback";
 
 // Factory: pick the appropriate parser based on environment.
 //
-//   - If AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT are set,
-//     use AzureOpenAIParser (auth via managed identity in
+//   - If AI_PARSER_FORCE_FALLBACK is truthy (`"true"` or `"1"`), the
+//     template fallback is returned regardless of any other env. This
+//     is the ops kill-switch for "AOAI is offline" drills (spec §7.5
+//     — the portal MUST stay up when AOAI is down) and the lever the
+//     e2e fallback test pulls.
+//   - Otherwise, if AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT
+//     are set, use AzureOpenAIParser (auth via managed identity in
 //     production, or API key from AZURE_OPENAI_API_KEY for local dev
 //     and CI smoke).
 //   - Otherwise, use the strict-template fallback so the upload flow
 //     never blocks waiting for AI provisioning.
 //
-// The choice is per-call (the parser is built each time you call
-// getAiParser()) so a future env change picks up without a process
-// restart. The cost is negligible — neither constructor does network
-// I/O at construction time.
+// The choice is cached for the process lifetime; tests reset via
+// __resetAiParserForTests(). Construction is cheap (no network I/O)
+// so per-call recomputation would be fine — caching exists only to
+// keep a single instance for instanceof checks.
 
 let cached: AiParser | undefined;
 
+function isForceFallback(): boolean {
+  const v = process.env.AI_PARSER_FORCE_FALLBACK;
+  return v === "true" || v === "1";
+}
+
 export function getAiParser(): AiParser {
   if (cached) return cached;
+
+  if (isForceFallback()) {
+    cached = new TemplateFallbackParser();
+    return cached;
+  }
 
   const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
   const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;

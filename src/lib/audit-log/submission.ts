@@ -15,6 +15,9 @@ export interface CreateSubmissionInput {
   sourceMarkdown: Buffer | Uint8Array;
   aiParsedOutput?: Prisma.InputJsonValue;
   aiConfidenceFlags?: Prisma.InputJsonValue;
+  // Which parser produced `aiParsedOutput` — see schema comment on
+  // Submission.aiParseSource. Surfaces on the approval screen.
+  aiParseSource?: string;
   notes?: string;
 }
 
@@ -43,6 +46,7 @@ export async function createSubmission(
       sourceMarkdownSha,
       aiParsedOutput: input.aiParsedOutput ?? Prisma.JsonNull,
       aiConfidenceFlags: input.aiConfidenceFlags ?? Prisma.JsonNull,
+      aiParseSource: input.aiParseSource ?? null,
       notes: input.notes ?? null,
     },
     select: { id: true, sourceMarkdownSha: true },
@@ -56,6 +60,7 @@ export interface ApproveSubmissionInput {
   approver: string;
   versionNumber: number;
   notes?: string;
+  entityId?: string;
 }
 
 export async function approveSubmission(
@@ -68,6 +73,7 @@ export async function approveSubmission(
       approvedAt: new Date(),
       versionNumber: input.versionNumber,
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      ...(input.entityId !== undefined ? { entityId: input.entityId } : {}),
     },
   });
 }

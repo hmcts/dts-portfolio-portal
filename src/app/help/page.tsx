@@ -69,6 +69,51 @@ export default function HelpPage() {
         </div>
       </Section>
 
+      <Section eyebrow="Shortcuts" heading="Keyboard navigation">
+        <Card>
+          <div className="grid grid-cols-1 gap-3 text-[14px] text-[var(--color-ink-soft)] md:grid-cols-2">
+            <div className="flex items-center justify-between gap-3">
+              <span>Focus the search input</span>
+              <span className="flex items-center gap-1.5">
+                <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunk)] px-1.5 py-0.5 font-mono text-[12px] text-[var(--color-ink)]">
+                  /
+                </kbd>
+                <span className="text-[12px] text-[var(--color-muted)]">or</span>
+                <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunk)] px-1.5 py-0.5 font-mono text-[12px] text-[var(--color-ink)]">
+                  ⌘
+                </kbd>
+                <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunk)] px-1.5 py-0.5 font-mono text-[12px] text-[var(--color-ink)]">
+                  K
+                </kbd>
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>Move through results</span>
+              <span className="flex items-center gap-1.5">
+                <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunk)] px-1.5 py-0.5 font-mono text-[12px] text-[var(--color-ink)]">
+                  ↑
+                </kbd>
+                <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunk)] px-1.5 py-0.5 font-mono text-[12px] text-[var(--color-ink)]">
+                  ↓
+                </kbd>
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>Open the highlighted result</span>
+              <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunk)] px-1.5 py-0.5 font-mono text-[12px] text-[var(--color-ink)]">
+                Enter
+              </kbd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>Close the overlay</span>
+              <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-sunk)] px-1.5 py-0.5 font-mono text-[12px] text-[var(--color-ink)]">
+                Esc
+              </kbd>
+            </div>
+          </div>
+        </Card>
+      </Section>
+
       <Section eyebrow="FAQ" heading="What this portal is and isn't">
         <Card>
           <div className="space-y-4 text-[14px] text-[var(--color-ink-soft)]">
