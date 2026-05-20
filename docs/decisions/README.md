@@ -69,7 +69,13 @@ Per the implementation plan, Phase 0 ratifies these ten ADRs from the locked dec
 | ADR-009 | Repository topology | Accepted | [`2026-05-19-adr-009-repo-topology.md`](2026-05-19-adr-009-repo-topology.md) |
 | ADR-010 | Deploy pipeline | Accepted | [`2026-05-19-adr-010-deploy-pipeline.md`](2026-05-19-adr-010-deploy-pipeline.md) |
 
-ADR-011 onward will be assigned as later decisions arise.
+## Post-Phase-0 decisions
+
+| ADR | Topic | Status | File |
+|---|---|---|---|
+| ADR-011 | Graceful degradation strategy | Proposed | [`2026-05-20-adr-011-graceful-degradation.md`](2026-05-20-adr-011-graceful-degradation.md) |
+
+ADR-012 onward will be assigned as later decisions arise.
 
 ## Phase 0 sign-off
 

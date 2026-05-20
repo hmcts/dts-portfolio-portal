@@ -426,6 +426,20 @@ Desktop-primary. Tablet must work. Mobile is acceptable but not optimised in v1.
 
 The portal is authenticated DTS staff only. No anonymous or public access. The specific auth mechanism is decided in the architecture phase; the spec assumes the portal receives a signed-in user identity (email at minimum, with optional team-membership claims).
 
+### 8.6 Degradation strategy
+
+The portal depends on several external services (Postgres, Azure OpenAI, Easy Auth, Key Vault). When any of them is unavailable, the portal must remain useful where possible and **must always show the user that it is in a degraded state**. Silent fallbacks are not acceptable — they breed mistrust in the content and hide real outages from operators.
+
+Capabilities are classified by criticality:
+
+1. **Viewing content** must never hard-fail. If the database is unavailable, the page renders a system banner explaining the outage rather than a 500.
+2. **Search** must degrade to a usable form. If full-text search is unavailable the overlay falls back to an approximate name lookup, clearly labelled as such. If the AI answer card is unavailable the card is omitted with a visible "answer card unavailable" note rather than an empty container.
+3. **Authoring — AI parse** must degrade to the strict-template fallback (§7.5). Every approved submission carries a visible `aiParseSource` indicator so reviewers know which parser produced the content. A global banner notifies all approvers when the AI helper has been kill-switched.
+4. **Authoring — write to DB** may hard-fail with a clear, operator-actionable message. The portal must never silently queue a submission that has not been persisted.
+5. **Ops dashboards** may hard-fail. Operators have other tools.
+
+The design rationale and the development conventions that flow from this policy (the `src/lib/health/` module, the `<SystemBanner />` component, the PR-review checklist) are recorded in [ADR-011](../../decisions/2026-05-20-adr-011-graceful-degradation.md).
+
 ## 9. Glossary
 
 | Term | Meaning |
