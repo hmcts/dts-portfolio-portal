@@ -10,6 +10,7 @@
   },
   "packageManager": "pnpm@10.4.1",
   "scripts": {
+    "demo": "./scripts/demo.sh",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
