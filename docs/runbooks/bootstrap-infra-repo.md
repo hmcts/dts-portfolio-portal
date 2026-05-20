@@ -227,6 +227,40 @@ Production has the additional gate of GitHub's environment-protection rule (requ
 
 ---
 
+## Operating without Azure OpenAI — the kill-switch
+
+Spec §7.5 requires that the portal stays operable when Azure OpenAI is
+unavailable — auth-required browsing, search, navigation, and the
+upload form must all keep working. The strict-template fallback
+parser is what bridges the gap: when AOAI is down, uploads continue
+to land as Submissions in the audit log, just via the deterministic
+template parser instead of AI.
+
+For ops drills (or genuine AOAI incidents), set the App Service
+config value:
+
+```
+AI_PARSER_FORCE_FALLBACK=true
+```
+
+The parser factory checks this first — when it's truthy (`"true"` or
+`"1"`), the AzureOpenAIParser is bypassed entirely regardless of
+whether `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_DEPLOYMENT` are
+set. Uploads route through the strict-template fallback, and the
+approval screen surfaces an amber "Strict template fallback" pill so
+reviewers can tell at a glance which parser produced the output.
+
+Unset (or set to `"false"`) to resume normal AOAI-backed parsing.
+App Service config changes restart the container automatically, so
+the next request will pick up the new value.
+
+To drill this locally without touching production: set the env in
+`.env.local` and restart `pnpm dev`. The e2e test
+`tests/e2e/ai-down-fallback.spec.ts` exercises the same path on every
+CI run.
+
+---
+
 ## What this runbook does not cover
 
 - **Custom domain setup** under `justice.gov.uk` — follow the [MoJ DNS repo](https://github.com/ministryofjustice/dns) process. See courttranscribe's `docs/deployment.md` for the closest analogue.

@@ -202,6 +202,12 @@ model Submission {
   sourceMarkdownSha String
   aiParsedOutput    Json?
   aiConfidenceFlags Json?
+  // Records which parser produced `aiParsedOutput`. Surfaces on the
+  // approval screen so reviewers know whether they're reading AOAI
+  // output or the strict-template fallback (spec §7.5; Phase 2 task
+  // 2.14). Nullable for back-compat with rows persisted before the
+  // column was added.
+  aiParseSource     String?
   approver          String?
   approvedAt        DateTime?
   versionNumber     Int?

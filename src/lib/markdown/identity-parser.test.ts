@@ -189,4 +189,81 @@ Body.
       expect(() => parseIdentity(md)).toThrow(IdentityParseError);
     });
   });
+
+  // Product `team` + `stage` were added as a Phase 2 simplification
+  // (see the comment at the field definition). The fields are optional
+  // but, when present, must round-trip and be schema-validated.
+  describe("product team + stage fields", () => {
+    function productMd(extra: string): string {
+      return `---
+type: product
+name: Common Platform
+domain: common-platform
+${extra}---
+
+# About
+
+Body.
+`;
+    }
+
+    it("parses a product with only `team` set", () => {
+      const out = parseIdentity(productMd("team: hearings-team\n"));
+      expect(out.frontMatter.type).toBe("product");
+      if (out.frontMatter.type === "product") {
+        expect(out.frontMatter.team).toBe("hearings-team");
+        expect(out.frontMatter.stage).toBeUndefined();
+      }
+    });
+
+    it("parses a product with only `stage` set", () => {
+      const out = parseIdentity(productMd("stage: beta\n"));
+      if (out.frontMatter.type === "product") {
+        expect(out.frontMatter.stage).toBe("beta");
+        expect(out.frontMatter.team).toBeUndefined();
+      }
+    });
+
+    it("parses a product with both `team` and `stage`", () => {
+      const out = parseIdentity(
+        productMd("team: Hearings Team\nstage: live\n"),
+      );
+      if (out.frontMatter.type === "product") {
+        // `team` is intentionally tolerant — name or slug accepted;
+        // normalisation happens at approve time, not here.
+        expect(out.frontMatter.team).toBe("Hearings Team");
+        expect(out.frontMatter.stage).toBe("live");
+      }
+    });
+
+    it("parses a product with neither field — both stay undefined", () => {
+      const out = parseIdentity(productMd(""));
+      if (out.frontMatter.type === "product") {
+        expect(out.frontMatter.team).toBeUndefined();
+        expect(out.frontMatter.stage).toBeUndefined();
+      }
+    });
+
+    it.each(["discovery", "alpha", "beta", "live", "retiring", "retired"])(
+      "accepts `stage: %s` (the full ProductStage enum)",
+      (stage) => {
+        const out = parseIdentity(productMd(`stage: ${stage}\n`));
+        if (out.frontMatter.type === "product") {
+          expect(out.frontMatter.stage).toBe(stage);
+        }
+      },
+    );
+
+    it("rejects an invalid `stage` enum value", () => {
+      expect(() =>
+        parseIdentity(productMd("stage: prototype\n")),
+      ).toThrow(IdentityParseError);
+    });
+
+    it("rejects an empty-string `team` (optional must mean absent, not blank)", () => {
+      expect(() => parseIdentity(productMd('team: ""\n'))).toThrow(
+        IdentityParseError,
+      );
+    });
+  });
 });

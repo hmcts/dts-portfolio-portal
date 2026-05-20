@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { approveSubmission } from "@/lib/audit-log/submission";
+import { getSubmissionById } from "@/lib/audit-log/queries";
+import { publishParsedSubmission } from "@/lib/publish/publish";
 
 // Server actions for the approval screen per spec §7.4. The approve
 // action stamps the Submission row with approver / approvedAt /
@@ -60,21 +62,52 @@ export async function approveSubmissionAction(
   nextVersionNumber: number,
   notes?: string,
 ): Promise<ApproveResult> {
+  let publishedSlug: string | null = null;
+  let publishedKind: string | null = null;
   try {
+    const submission = await getSubmissionById(submissionId);
+    if (!submission) {
+      return { ok: false, error: "Submission not found." };
+    }
+    if (submission.approver !== null) {
+      return { ok: false, error: "Submission already approved." };
+    }
     const approver = await resolveApprover();
+    // Step 1 — publish: upsert the entity in the live tables. This
+    // is the only path that writes to entity tables (spec §7.4).
+    const published = await publishParsedSubmission(
+      submission.aiParsedOutput,
+    );
+    publishedSlug = published.entitySlug;
+    publishedKind = published.entityKind;
+    // Step 2 — stamp the audit log row with the approve metadata
+    // and the entityId of the published row.
     await approveSubmission({
       submissionId,
       approver,
       versionNumber: nextVersionNumber,
+      entityId: published.entityId,
       ...(notes ? { notes } : {}),
     });
     revalidatePath("/approvals");
     revalidatePath(`/approvals/${submissionId}`);
+    revalidatePath(`/${publishedKind === "jurisdiction" ? "j" : publishedKind === "domain" ? "d" : publishedKind === "team" ? "t" : "p"}/${publishedSlug}`);
+    revalidatePath("/");
   } catch (err) {
     return {
       ok: false,
       error: err instanceof Error ? err.message : String(err),
     };
   }
-  redirect("/approvals");
+  // Redirect to the now-live entity page so the approver sees the
+  // published result, not back to the approvals list.
+  const route =
+    publishedKind === "jurisdiction"
+      ? `/j/${publishedSlug}`
+      : publishedKind === "domain"
+        ? `/d/${publishedSlug}`
+        : publishedKind === "team"
+          ? `/t/${publishedSlug}`
+          : `/p/${publishedSlug}`;
+  redirect(route);
 }
