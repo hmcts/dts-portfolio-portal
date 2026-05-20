@@ -28,7 +28,7 @@
     "db:migrate:status": "prisma migrate status",
     "db:seed": "tsx scripts/seed-db.ts",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && node scripts/write-next-env.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

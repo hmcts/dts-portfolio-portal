@@ -55,6 +55,12 @@ node_modules/
 # --- TypeScript ---
 *.tsbuildinfo
 
+# next-env.d.ts is generated + rewritten by Next.js (dev vs build
+# rewrites the routes.d.ts import path). create-next-app's default
+# .gitignore excludes it; we generate a stub at install time via
+# postinstall so tsc still has the file to parse.
+next-env.d.ts
+
 # --- Build / dist (generic) ---
 dist/
 build/
