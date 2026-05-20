@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { Sidebar } from "./sidebar";
 import type { SidebarJurisdiction } from "@/lib/portal-data";
@@ -42,6 +42,23 @@ const FIXTURE: SidebarJurisdiction[] = [
     domains: [],
   },
 ];
+
+beforeEach(() => {
+  // Sidebar persists expanded state to localStorage on every change
+  // and rehydrates from it in useEffect. Without clearing between
+  // tests, state from one test leaks into the next (a test that
+  // expands Civil leaves it expanded for the next, which then sees
+  // it ALREADY open and a click toggles CLOSED instead of OPEN).
+  // happy-dom's localStorage behaviour differs across environments
+  // — this passes locally but fails in CI without the reset.
+  try {
+    window.localStorage.clear();
+  } catch {
+    // Some happy-dom configurations disable localStorage entirely;
+    // .clear() throws then. Safe to ignore — the tests don't rely
+    // on it being present, only on it not being polluted.
+  }
+});
 
 afterEach(() => {
   cleanup();
