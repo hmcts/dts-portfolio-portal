@@ -27,7 +27,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && node scripts/write-next-env.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
