@@ -136,3 +136,28 @@ export function getInitiativesForDomain(
     LATER: matching.filter((i) => i.bucket === "LATER"),
   };
 }
+
+export interface SidebarJurisdiction {
+  slug: string;
+  name: string;
+  count: number;
+  domains: Array<{ slug: string; name: string }>;
+}
+
+// Sidebar data: every Jurisdiction with the Domains underneath it.
+// The previous hardcoded sidebar showed wrong counts and a missing
+// domain list for every Jurisdiction except Crime — this is the
+// source of truth.
+export function getSidebarJurisdictions(): SidebarJurisdiction[] {
+  return portalContent.jurisdictions.map((j) => {
+    const domains = portalContent.domains
+      .filter((d) => d.jurisdictionSlug === j.slug)
+      .map((d) => ({ slug: d.slug, name: d.name }));
+    return {
+      slug: j.slug,
+      name: j.name,
+      count: domains.length,
+      domains,
+    };
+  });
+}
