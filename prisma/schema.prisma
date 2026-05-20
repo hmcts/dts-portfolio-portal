@@ -189,6 +189,37 @@ model AiParseMetric {
   @@index([source, outcome])
 }
 
+// Search event log per Phase 3 task 3.7. One row per /api/search hit
+// (recorded server-side) and one row per result click (recorded
+// client-side via a beacon). The dashboard at /ops/search reads this
+// to surface zero-result queries and queries-without-clicks for
+// relevance triage.
+//
+// Append-only at the DB layer (same trigger pattern as Submission +
+// AiParseMetric). User identity is the Phase 4 auth subject hash; we
+// never store the email itself here per spec §8.4 data minimisation.
+model SearchEvent {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  // "query" when the user submits a search; "click" when they open a result.
+  kind         String
+  query        String
+  // For "query" events: how many results came back.
+  resultCount  Int?
+  // For "click" events: which entity the user clicked.
+  clickedEntityType String?
+  clickedEntityId   String?
+  clickedPosition   Int?
+  // Anonymous-by-default subject identifier (SHA-256 of the auth
+  // sub claim). Null until Phase 4 auth wires real identities; the
+  // recorder accepts null so we don't lose pre-auth queries.
+  subjectHash  String?
+
+  @@index([createdAt])
+  @@index([kind, createdAt])
+  @@index([query])
+}
+
 // Append-only audit log. INSERT-only at the application layer; UPDATE
 // and DELETE revoked at the database layer in migrations. Tracks every
 // markdown upload + AI parse + approval event per spec §7.6.
