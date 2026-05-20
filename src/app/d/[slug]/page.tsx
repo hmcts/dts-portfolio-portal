@@ -58,7 +58,7 @@ export default async function DomainPage({
   );
 
   return (
-    <div className="mx-auto max-w-[1100px]">
+    <div className="mx-auto max-w-[1480px]">
       <Breadcrumbs
         items={[
           { label: "Jurisdictions" },

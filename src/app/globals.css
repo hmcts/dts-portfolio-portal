@@ -67,6 +67,12 @@ body {
   background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  /* Prototype uses 15px as the body baseline (not the browser
+     default 16px). Smaller rhythm makes the page denser and matches
+     docs/prototype/DTS Portfolio Portal - standalone.html measured
+     at 15px on body. */
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 /* GDS-style focus ring: yellow fill with black underline for high

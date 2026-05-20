@@ -33,7 +33,7 @@ export default async function ApprovalsListPage() {
   const submissions = await listPendingSubmissions();
 
   return (
-    <div className="mx-auto max-w-[1100px]">
+    <div className="mx-auto max-w-[1480px]">
       <PageHeader
         eyebrow="Approvals"
         title="Pending submissions"
