@@ -95,7 +95,16 @@ info "applying Prisma migrations"
 pnpm db:migrate:deploy 2>&1 | sed 's/^/    /' | tail -5
 ok "migrations applied"
 
-# ---------- 5. dev server ----------
+# ---------- 5. seed data ----------
+# Idempotent — upsert by slug, REPLACE child collections. Safe to
+# re-run on every demo bring-up. Without this, search returns no
+# results, the approval flow has no existing entities to update,
+# and the ops dashboards are empty.
+info "loading the seed data into Postgres"
+pnpm db:seed 2>&1 | sed 's/^/    /' | tail -10
+ok "seed loaded"
+
+# ---------- 6. dev server ----------
 # Stop anything already on the port — local dev pattern.
 if lsof -i ":${APP_PORT}" -t >/dev/null 2>&1; then
   info "stopping process already on port $APP_PORT"
@@ -120,7 +129,7 @@ until curl -sf "http://localhost:${APP_PORT}/healthz" >/dev/null 2>&1; do
 done
 ok "dev server up at http://localhost:${APP_PORT} (pid $DEV_PID)"
 
-# ---------- 6. rundown ----------
+# ---------- 7. rundown ----------
 cat <<EOF
 
 ────────────────────────────────────────────────────────────────────
@@ -139,17 +148,25 @@ cat <<EOF
     /help                   templates + keyboard shortcuts
     Hotkeys                 "/" or ⌘K to focus search
 
-  Visible but empty (reads from Postgres — empty until you author):
-    /approvals              upload + approve to populate
+  Now also populated (DB seeded from src/lib/seed.ts):
+    Search overlay          returns matches for any seeded entity
+    /search?q=…             ranked results page is usable
+    /approvals              upload over existing entities to test
+                            the re-publish path
+    Approval flow           has real entities to update
+
+  Visible but empty (populate by using the portal):
     /ops/ai-cost            populates as parses happen
     /ops/search             populates as searches happen
-    Search overlay          returns "No matches" against an empty DB
 
   Stopped working locally (deliberate):
     Azure OpenAI            AI_PARSER_FORCE_FALLBACK=true forces the
                             strict-template fallback parser.
     Answer card             /api/answer-card returns "unavailable"
                             until AZURE_OPENAI_ENDPOINT is set.
+
+  Re-seed the DB at any time:
+    pnpm db:seed
 
   Stop the dev server:
     kill \$(cat /tmp/portal-demo.pid)

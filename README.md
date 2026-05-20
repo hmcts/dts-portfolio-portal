@@ -112,7 +112,7 @@ Runs the production image instead of `pnpm dev`. Same image App Service runs in 
 
 | Command | What it does |
 |---|---|
-| `pnpm demo` | One-shot local bring-up — Postgres + migrations + dev server. See [`scripts/demo.sh`](scripts/demo.sh) |
+| `pnpm demo` | One-shot local bring-up — Postgres + migrations + seed + dev server. See [`scripts/demo.sh`](scripts/demo.sh) |
 | `pnpm dev` | Next.js dev server with HMR on :3000 |
 | `pnpm build` | Production build (Next standalone output) |
 | `pnpm typecheck` | `tsc --noEmit` on the whole project |
@@ -124,6 +124,7 @@ Runs the production image instead of `pnpm dev`. Same image App Service runs in 
 | `pnpm db:migrate:dev --name <slug>` | Create + apply a new migration |
 | `pnpm db:migrate:deploy` | Apply pending migrations (production-safe) |
 | `pnpm db:migrate:status` | Show pending vs applied migrations |
+| `pnpm db:seed` | Idempotent upsert of `src/lib/seed.ts` into Postgres |
 | `pnpm db:studio` | Prisma Studio (browse the DB in the browser) |
 
 ## Architecture in one paragraph
