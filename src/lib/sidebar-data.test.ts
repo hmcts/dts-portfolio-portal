@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { portalContent } from "./seed";
-import { getSidebarJurisdictions } from "./portal-data";
+import { getSidebarJurisdictions } from "./portal-data-seed";
 
-// Direct tests for the sidebar's data helper. PR #41 fixed a bug
-// where the sidebar's expand chevron rendered an empty section
-// for Civil / Family / Tribunals / Administrative because the
-// hardcoded JURISDICTIONS array only populated `domains` for
-// Crime. The helper now drives off the seed; these tests pin the
-// contract so a regression to a partial array or empty list would
-// fail loudly.
+// Direct tests for the SYNC seed-backed sidebar helper. PR #41
+// fixed a bug where the sidebar's expand chevron rendered an empty
+// section for Civil / Family / Tribunals / Administrative because
+// the hardcoded JURISDICTIONS array only populated `domains` for
+// Crime.
 //
-// File named `sidebar-data` rather than `portal-data` so it
-// doesn't collide with portal-data.int.test.ts (DB-backed reads)
-// when PR #42's read-path swap lands and this helper becomes
-// async.
+// PR #42's read-path swap made the public portal-data.ts wrapper
+// async (DB-first, seed-fallback). The async wrapper is covered by
+// portal-data.int.test.ts. This file covers the SYNC seed helper
+// directly — it's the source of truth for the fallback path, so
+// pinning it here means a regression in either the wrapper OR the
+// seed reaches both test suites.
 
 describe("getSidebarJurisdictions", () => {
   const result = getSidebarJurisdictions();
