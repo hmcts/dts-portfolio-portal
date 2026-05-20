@@ -18,8 +18,16 @@
 // — that file only exists after `next dev` or `next build` has run
 // (so referencing it pre-build would fail). Next.js will add it
 // back the first time it runs locally; the rewrite stays gitignored.
+//
+// Concurrency: this script runs from `postinstall` and could in
+// principle race with another process that touches next-env.d.ts.
+// We avoid a time-of-check / time-of-use race by using `openSync`
+// with the `wx` flag — the OS atomically creates the file ONLY if
+// it doesn't already exist. If it exists (EEXIST), we leave it
+// alone; whatever's there (Next-generated rewrite, our previous
+// stub) is already correct for the next compile.
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { closeSync, openSync, writeSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -33,20 +41,23 @@ const STUB = `/// <reference types="next" />
 // \`next build\`. It is gitignored; see scripts/write-next-env.mjs.
 `;
 
-// Idempotent: only write if the file is missing OR has been
-// stripped to nothing. If Next has already rewritten it with the
-// routes import, leave it alone — that's the canonical content
-// for whichever mode last ran.
-if (!existsSync(TARGET)) {
-  writeFileSync(TARGET, STUB);
-  console.log("[write-next-env] wrote stub next-env.d.ts");
-} else {
-  const current = readFileSync(TARGET, "utf8");
-  if (current.trim() === "") {
-    writeFileSync(TARGET, STUB);
-    console.log("[write-next-env] replaced empty next-env.d.ts with stub");
-  } else {
-    // Existing content (either a Next-generated rewrite or our
-    // stub from a previous run). No-op.
+let fd;
+try {
+  // Atomic "create if absent, fail if present" — closes the
+  // existsSync → writeFileSync TOCTOU window.
+  fd = openSync(TARGET, "wx");
+} catch (err) {
+  if (err && err.code === "EEXIST") {
+    // Already in place. Nothing to do — whatever's there (a Next
+    // rewrite, or our previous stub) is fine for the next compile.
+    process.exit(0);
   }
+  throw err;
+}
+
+try {
+  writeSync(fd, STUB);
+  console.log("[write-next-env] wrote stub next-env.d.ts");
+} finally {
+  closeSync(fd);
 }
