@@ -44,11 +44,35 @@ A high-level, single-front-door view of delivery information across DTS in HMCTS
 
 ### Prerequisites
 
-- Node.js 22+
-- pnpm 10+ (run `corepack enable` if you don't have it; the project pins via `packageManager`)
-- Docker (Desktop or Engine) for the local Postgres
+You need these installed before the demo script (or the manual setup below) will run.
 
-### Setup
+| Tool | Minimum | Verify |
+|---|---|---|
+| **Node.js** | 22.0.0 — pinned in `.nvmrc` and `engines.node` | `node --version` → `v22.x` |
+| **pnpm** | 10.0.0 — pinned via `packageManager` (`pnpm@10.4.1`) | `pnpm --version` |
+| **Docker** | any recent — Desktop, OrbStack, or Colima all work | `docker info` must succeed |
+| **Disk** | ~1.5 GB free for `node_modules` (~500 MB) + Postgres image (~250 MB) + Next/Playwright caches | |
+| **Ports** | `3000` (dev server) and `5432` (Postgres) must be free | `lsof -i :3000`, `lsof -i :5432` |
+
+Optional helpers:
+
+- **`nvm` / `fnm` / `volta`** — pick up the `.nvmrc` automatically: `nvm use` or `fnm use`
+- **`corepack`** — ships with Node 22 and provisions the right pnpm version on first use: `corepack enable`
+- **`direnv`** — picks up the project-level `.envrc` automatically when you `cd` into the repo (the file is gitignored; it pins `DATABASE_URL` to the local container and unsets any inherited secrets)
+
+OS support: macOS (Apple Silicon and Intel) and Linux are both routinely used. Windows works through WSL2 — run all commands inside the WSL shell, not PowerShell.
+
+### Quick start (one command)
+
+```bash
+pnpm demo
+```
+
+This wraps everything below into a single idempotent script: checks Docker, brings up the Postgres container (creating it if needed), installs deps if stale, applies migrations, starts the dev server, and prints a rundown of what's visible vs what's empty until you author content. See [`scripts/demo.sh`](scripts/demo.sh).
+
+### Setup (manual)
+
+If you'd rather run the steps yourself:
 
 ```bash
 # Install dependencies
@@ -88,6 +112,7 @@ Runs the production image instead of `pnpm dev`. Same image App Service runs in 
 
 | Command | What it does |
 |---|---|
+| `pnpm demo` | One-shot local bring-up — Postgres + migrations + dev server. See [`scripts/demo.sh`](scripts/demo.sh) |
 | `pnpm dev` | Next.js dev server with HMR on :3000 |
 | `pnpm build` | Production build (Next standalone output) |
 | `pnpm typecheck` | `tsc --noEmit` on the whole project |
