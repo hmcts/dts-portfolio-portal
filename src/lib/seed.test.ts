@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { portalContent } from "./seed";
 import { PortalContent } from "./entities";
-import { getMatrix, getJurisdictionCounts } from "./portal-data";
+// Seed test — exercises the SYNC seed-only helpers, not the
+// DB-backed wrappers in portal-data.ts. The wrapper layer is
+// covered separately by an integration test in portal-data.int.test.ts.
+import { getMatrix, getJurisdictionCounts } from "./portal-data-seed";
 
 describe("portalContent seed", () => {
   it("parses cleanly against the PortalContent schema", () => {

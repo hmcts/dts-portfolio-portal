@@ -11,9 +11,8 @@ import { getActivity, getMatrix } from "@/lib/portal-data";
 // expanded; followed by the "latest approved changes" activity feed
 // pulled from the audit log.
 
-export default function HomePage() {
-  const matrix = getMatrix();
-  const activity = getActivity();
+export default async function HomePage() {
+  const [matrix, activity] = await Promise.all([getMatrix(), getActivity()]);
 
   return (
     <div className="mx-auto max-w-[1100px]">

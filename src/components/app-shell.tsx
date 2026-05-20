@@ -16,8 +16,12 @@ import { Topbar } from "./topbar";
 // own `useState` for the expand-chevron state) so it can't fetch
 // the data itself.
 
-export function AppShell({ children }: { children: React.ReactNode }) {
-  const jurisdictions = getSidebarJurisdictions();
+export async function AppShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const jurisdictions = await getSidebarJurisdictions();
   return (
     <div className="flex h-dvh w-dvw overflow-hidden bg-[var(--color-canvas)]">
       <Sidebar jurisdictions={jurisdictions} />
