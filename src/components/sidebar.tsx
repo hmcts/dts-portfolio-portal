@@ -19,31 +19,18 @@ import { cn } from "@/lib/cn";
 // render deterministic ("Crime expanded" matches the prototype).
 const SIDEBAR_STORAGE_KEY = "dts-portal:sidebar:jurisdictions";
 
-// Fixed jurisdiction taxonomy per requirements spec §3.2. The domain
-// list under each is wired to live data once seed lands in 1.6; for now
-// the foundation shows the v1 Crime placeholders so the prototype's
-// expanded-Crime example renders identically.
-const JURISDICTIONS: Array<{
+// Shape of one Jurisdiction in the sidebar nav. Sourced from
+// getSidebarJurisdictions() in portal-data.ts so counts + lists
+// stay in sync with the actual content. The previous hardcoded
+// version showed wrong counts for Civil / Family / Tribunals /
+// Administrative and had NO domain list for any of them — the
+// expand chevron worked but rendered an empty section.
+export interface SidebarJurisdiction {
   slug: string;
   name: string;
   count: number;
-  domains?: Array<{ slug: string; name: string }>;
-}> = [
-  {
-    slug: "crime",
-    name: "Crime",
-    count: 3,
-    domains: [
-      { slug: "common-platform", name: "Common Platform" },
-      { slug: "courtroom-hearings", name: "Courtroom & Hearings" },
-      { slug: "case-preparation", name: "Case Preparation" },
-    ],
-  },
-  { slug: "civil", name: "Civil", count: 2 },
-  { slug: "family", name: "Family", count: 2 },
-  { slug: "tribunals", name: "Tribunals", count: 3 },
-  { slug: "administrative", name: "Administrative", count: 1 },
-];
+  domains: Array<{ slug: string; name: string }>;
+}
 
 interface NavItemProps {
   href?: string;
@@ -92,7 +79,11 @@ function NavItem({
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  jurisdictions,
+}: {
+  jurisdictions: SidebarJurisdiction[];
+}) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     crime: true,
@@ -163,7 +154,7 @@ export function Sidebar() {
           Jurisdictions
         </div>
 
-        {JURISDICTIONS.map((j) => {
+        {jurisdictions.map((j) => {
           const open = !!expanded[j.slug];
           const href = `/j/${j.slug}`;
           return (
@@ -196,7 +187,7 @@ export function Sidebar() {
                   )}
                 />
               </button>
-              {open && j.domains ? (
+              {open && j.domains.length > 0 ? (
                 <div id={`nav-${j.slug}`} className="ml-7 mt-0.5 flex flex-col gap-0.5">
                   {j.domains.map((d) => (
                     <NavItem
@@ -207,6 +198,13 @@ export function Sidebar() {
                       small
                     />
                   ))}
+                </div>
+              ) : open ? (
+                <div
+                  id={`nav-${j.slug}`}
+                  className="ml-7 mt-0.5 px-2.5 py-1.5 text-[12px] text-[var(--color-muted)]"
+                >
+                  No Domains yet.
                 </div>
               ) : null}
             </div>
