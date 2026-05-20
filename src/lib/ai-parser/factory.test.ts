@@ -47,4 +47,30 @@ describe("getAiParser factory", () => {
     const second = getAiParser();
     expect(second).toBe(first);
   });
+
+  // Kill-switch per spec §7.5 / Phase 2 task 2.14. Even when AOAI env
+  // is fully configured, AI_PARSER_FORCE_FALLBACK=true must short-
+  // circuit the factory so ops can drill "AI is offline" without
+  // tearing down the AOAI deployment, and so e2e tests can exercise
+  // the fallback path deterministically.
+  it.each(["true", "1"])(
+    "returns the template fallback when AI_PARSER_FORCE_FALLBACK=%s, even with AOAI env set",
+    (forced) => {
+      process.env.AZURE_OPENAI_ENDPOINT =
+        "https://example-aoai.openai.azure.com";
+      process.env.AZURE_OPENAI_DEPLOYMENT = "gpt-4o";
+      process.env.AZURE_OPENAI_API_KEY = "test-key";
+      process.env.AI_PARSER_FORCE_FALLBACK = forced;
+      expect(getAiParser()).toBeInstanceOf(TemplateFallbackParser);
+    },
+  );
+
+  it("ignores AI_PARSER_FORCE_FALLBACK when set to a non-truthy value", () => {
+    process.env.AZURE_OPENAI_ENDPOINT =
+      "https://example-aoai.openai.azure.com";
+    process.env.AZURE_OPENAI_DEPLOYMENT = "gpt-4o";
+    process.env.AZURE_OPENAI_API_KEY = "test-key";
+    process.env.AI_PARSER_FORCE_FALLBACK = "false";
+    expect(getAiParser()).toBeInstanceOf(AzureOpenAIParser);
+  });
 });

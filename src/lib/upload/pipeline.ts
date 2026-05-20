@@ -75,6 +75,10 @@ export async function processUpload(
     sourceMarkdown: bytes,
     aiParsedOutput: persistedOutput as unknown as Prisma.InputJsonValue,
     aiConfidenceFlags: parseResult.confidence as unknown as Prisma.InputJsonValue,
+    // Record which parser produced the output. Surfaces on the
+    // approval screen so reviewers know whether they're reading AOAI
+    // output or the strict-template fallback (spec §7.5; task 2.14).
+    aiParseSource: parseResult.source,
   });
 
   return {

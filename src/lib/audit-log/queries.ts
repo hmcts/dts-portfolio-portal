@@ -17,6 +17,7 @@ export async function listPendingSubmissions() {
       sourceMarkdownSha: true,
       versionNumber: true,
       aiParsedOutput: true,
+      aiParseSource: true,
     },
   });
 }
