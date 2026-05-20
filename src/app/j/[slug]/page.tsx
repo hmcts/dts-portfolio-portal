@@ -25,16 +25,34 @@ export default async function JurisdictionPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const jurisdiction = getJurisdictionBySlug(slug);
+  const jurisdiction = await getJurisdictionBySlug(slug);
   if (!jurisdiction) {
     notFound();
   }
 
-  const matrix = getMatrix().filter(
+  const [allMatrix, domains, consumedHere] = await Promise.all([
+    getMatrix(),
+    getDomainsByJurisdiction(jurisdiction.slug),
+    getProductsConsumedBy(jurisdiction.slug),
+  ]);
+  const matrix = allMatrix.filter(
     (band) => band.jurisdiction.slug === jurisdiction.slug,
   );
-  const domains = getDomainsByJurisdiction(jurisdiction.slug);
-  const consumedHere = getProductsConsumedBy(jurisdiction.slug);
+
+  // Pre-compute the per-domain Team + Product counts so the JSX
+  // iteration below stays synchronous. Each is its own DB query;
+  // running them in parallel keeps the page snappy even on the
+  // larger Jurisdictions.
+  const domainStats = await Promise.all(
+    domains.map(async (d) => {
+      const [teams, products] = await Promise.all([
+        getTeamsForDomain(d.slug),
+        getProductsForDomain(d.slug),
+      ]);
+      return { slug: d.slug, teamCount: teams.length, productCount: products.length };
+    }),
+  );
+  const statsBySlug = new Map(domainStats.map((s) => [s.slug, s]));
 
   return (
     <div className="mx-auto max-w-[1100px]">
@@ -68,8 +86,8 @@ export default async function JurisdictionPage({
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {domains.map((d) => {
-              const teamCount = getTeamsForDomain(d.slug).length;
-              const productCount = getProductsForDomain(d.slug).length;
+              const stats = statsBySlug.get(d.slug)!;
+              const { teamCount, productCount } = stats;
               return (
                 <Link key={d.slug} href={`/d/${d.slug}`} className="group">
                   <Card className="h-full transition-colors group-hover:border-[var(--color-border-strong)]">

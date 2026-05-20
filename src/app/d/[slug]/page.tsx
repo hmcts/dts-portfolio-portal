@@ -36,13 +36,26 @@ export default async function DomainPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const domain = getDomainBySlug(slug);
+  const domain = await getDomainBySlug(slug);
   if (!domain) {
     notFound();
   }
-  const jurisdiction = getJurisdictionBySlug(domain.jurisdictionSlug);
-  const teams = getTeamsForDomain(domain.slug);
-  const products = getProductsForDomain(domain.slug);
+  const [jurisdiction, teams, products] = await Promise.all([
+    getJurisdictionBySlug(domain.jurisdictionSlug),
+    getTeamsForDomain(domain.slug),
+    getProductsForDomain(domain.slug),
+  ]);
+  // Pre-fetch initiatives per Product so the JSX iteration stays
+  // synchronous. Each is a Prisma query; running in parallel keeps
+  // page render under the 500ms perceived budget.
+  const initiativesByProductId = new Map(
+    await Promise.all(
+      products.map(
+        async (p) =>
+          [p.id, await getInitiativesForProduct(p.id)] as const,
+      ),
+    ),
+  );
 
   return (
     <div className="mx-auto max-w-[1100px]">
@@ -130,7 +143,7 @@ export default async function DomainPage({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {products.map((p) => {
             const team = teams.find((t) => t.slug === p.operatingTeamSlug);
-            const initiatives = getInitiativesForProduct(p.id);
+            const initiatives = initiativesByProductId.get(p.id) ?? [];
             return (
               <ProductCardModal
                 key={p.slug}

@@ -44,16 +44,25 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) {
     notFound();
   }
-  const domain = getDomainBySlug(product.domainSlug);
+  const [domain, team, initiatives] = await Promise.all([
+    getDomainBySlug(product.domainSlug),
+    getTeamBySlug(product.operatingTeamSlug),
+    getInitiativesForProduct(product.id),
+  ]);
   const jurisdiction = domain
-    ? getJurisdictionBySlug(domain.jurisdictionSlug)
+    ? await getJurisdictionBySlug(domain.jurisdictionSlug)
     : undefined;
-  const team = getTeamBySlug(product.operatingTeamSlug);
-  const initiatives = getInitiativesForProduct(product.id);
+  // Resolve the "consumed by" jurisdictions up-front so the JSX
+  // iteration below stays synchronous.
+  const consumedByJurisdictions = (
+    await Promise.all(
+      product.consumedBy.map(async (s) => await getJurisdictionBySlug(s)),
+    )
+  ).filter((j): j is NonNullable<typeof j> => j !== undefined);
   const initiativesByBucket: Record<TimeBucket, typeof initiatives> = {
     NOW: initiatives.filter((i) => i.bucket === "NOW"),
     NEXT: initiatives.filter((i) => i.bucket === "NEXT"),
@@ -180,19 +189,16 @@ export default async function ProductPage({
         >
           <Card>
             <ul role="list" className="flex flex-wrap gap-2">
-              {product.consumedBy.map((slug) => {
-                const j = getJurisdictionBySlug(slug);
-                return j ? (
-                  <li key={slug}>
-                    <Link
-                      href={`/j/${slug}`}
-                      className="inline-flex items-center rounded-[var(--radius-pill)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-[13px] text-[var(--color-ink-soft)] hover:bg-[var(--color-surface-sunk)]"
-                    >
-                      {j.name}
-                    </Link>
-                  </li>
-                ) : null;
-              })}
+              {consumedByJurisdictions.map((j) => (
+                <li key={j.slug}>
+                  <Link
+                    href={`/j/${j.slug}`}
+                    className="inline-flex items-center rounded-[var(--radius-pill)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-[13px] text-[var(--color-ink-soft)] hover:bg-[var(--color-surface-sunk)]"
+                  >
+                    {j.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </Card>
         </Section>

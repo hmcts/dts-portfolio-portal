@@ -53,15 +53,17 @@ export default async function TeamPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const team = getTeamBySlug(slug);
+  const team = await getTeamBySlug(slug);
   if (!team) {
     notFound();
   }
-  const domain = getDomainBySlug(team.domainSlug);
+  const [domain, products] = await Promise.all([
+    getDomainBySlug(team.domainSlug),
+    getProductsForTeam(team.slug),
+  ]);
   const jurisdiction = domain
-    ? getJurisdictionBySlug(domain.jurisdictionSlug)
+    ? await getJurisdictionBySlug(domain.jurisdictionSlug)
     : undefined;
-  const products = getProductsForTeam(team.slug);
 
   return (
     <div className="mx-auto max-w-[1100px]">
