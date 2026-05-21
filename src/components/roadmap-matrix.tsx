@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Scale, ArrowRight } from "lucide-react";
+import { ChevronRight, ArrowRight } from "lucide-react";
 import { InitiativeChip } from "@/components/initiative-chip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -33,18 +33,18 @@ export function RoadmapMatrix({
       aria-label="Cross-DTS roadmap"
       className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)]"
     >
-      <div className="grid grid-cols-[280px_repeat(3,1fr)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunk)] text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted)]">
+      <div className="grid grid-cols-[280px_repeat(3,1fr)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunk)] text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted)]">
         <div className="border-r border-[var(--color-border)] px-4 py-3">
           Product Domain
         </div>
         <div className="border-r border-[var(--color-border)] px-4 py-3">
-          Now <span className="text-[var(--color-muted)] normal-case font-normal">· in flight</span>
+          Now <span className="text-[var(--color-muted)]">· in flight</span>
         </div>
         <div className="border-r border-[var(--color-border)] px-4 py-3">
-          Next <span className="text-[var(--color-muted)] normal-case font-normal">· committed</span>
+          Next <span className="text-[var(--color-muted)]">· committed</span>
         </div>
         <div className="px-4 py-3">
-          Later <span className="text-[var(--color-muted)] normal-case font-normal">· acknowledged</span>
+          Later <span className="text-[var(--color-muted)]">· acknowledged</span>
         </div>
       </div>
 
@@ -71,6 +71,8 @@ export function RoadmapMatrix({
                 }
                 className="flex flex-1 items-center gap-2.5 text-left font-semibold text-[var(--color-ink)]"
               >
+                {/* Chevron-only — prototype omits the Scale icon
+                    that previously sat next to the band name. */}
                 <ChevronRight
                   size={14}
                   aria-hidden="true"
@@ -79,9 +81,10 @@ export function RoadmapMatrix({
                     open && "rotate-90",
                   )}
                 />
-                <Scale size={14} aria-hidden="true" />
                 <span>{band.jurisdiction.name}</span>
-                <span className="text-[12px] font-normal text-[var(--color-muted)]">
+                {/* Meta inherits semibold from the parent button,
+                    matching the prototype's bolded muted text. */}
+                <span className="text-[12px] text-[var(--color-muted)]">
                   · {band.domainCount} {band.domainCount === 1 ? "domain" : "domains"} · {band.initiativeCount} {band.initiativeCount === 1 ? "initiative" : "initiatives"}
                 </span>
               </button>
