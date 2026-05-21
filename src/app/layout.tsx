@@ -11,7 +11,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f6f3",
+  // Matches --color-canvas — mobile browser chrome tints to the
+  // page canvas. Prototype renders pure white, not the original
+  // warm-stone cream. See globals.css for the token rationale.
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
