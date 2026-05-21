@@ -14,7 +14,7 @@ A high-level, single-front-door view of delivery information across DTS in HMCTS
 | [docs/superpowers/specs/2026-05-19-azure-stack-design.md](docs/superpowers/specs/2026-05-19-azure-stack-design.md) | Azure stack design (locked decisions) |
 | [docs/superpowers/plans/2026-05-15-dts-portfolio-portal.md](docs/superpowers/plans/2026-05-15-dts-portfolio-portal.md) | Phased implementation plan |
 | [docs/decisions/](docs/decisions/) | Ten Phase-0 ADRs |
-| [docs/prototype/](docs/prototype/) | Standalone HTML prototype (visual reference) |
+| [docs/prototype/](docs/prototype/) | Standalone HTML prototype (visual reference) — [live preview](https://rawcdn.githack.com/hmcts/dts-portfolio-portal/72438d3f28a64b326c020125ef706ab7a5162f43/docs/prototype/DTS%20Portfolio%20Portal%20-%20standalone.html) |
 | [CLAUDE.md](CLAUDE.md) | Engineering standards + how Claude is used here |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contributing conventions |
 

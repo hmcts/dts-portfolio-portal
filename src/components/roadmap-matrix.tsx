@@ -143,7 +143,12 @@ export function RoadmapMatrix({
                             </span>
                           ) : (
                             row.cells[bucket].map((i) => (
-                              <InitiativeChip key={i.id} initiative={i} />
+                              <InitiativeChip
+                                key={i.id}
+                                initiative={i}
+                                productName={i.productName}
+                                productHref={i.productHref}
+                              />
                             ))
                           )}
                         </div>
