@@ -18,12 +18,9 @@ describe("Chip", () => {
     );
   });
 
-  it("falls back to the label as title when hint is omitted", () => {
+  it("omits the title attribute entirely when no hint is provided", () => {
     render(<Chip bucket="LATER" label="Event-sourcing re-platform" />);
-    expect(screen.getByRole("button")).toHaveAttribute(
-      "title",
-      "Event-sourcing re-platform",
-    );
+    expect(screen.getByRole("button")).not.toHaveAttribute("title");
   });
 
   it.each([

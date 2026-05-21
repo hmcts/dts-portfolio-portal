@@ -60,31 +60,34 @@ export function ActivityFeed({ entries }: { entries: ActivityEntry[] }) {
         {entries.map((entry) => {
           const Icon = KIND_ICONS[entry.kind];
           return (
-            <li
-              key={entry.id}
-              className="flex items-center gap-4 px-5 py-3.5"
-            >
-              <span
-                aria-hidden="true"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-sunk)] text-[var(--color-muted)]"
+            <li key={entry.id}>
+              {/* Whole row is a single click target — navigates to the
+                  affected entity's page. Replaces the previous
+                  text-only inline link on the subject word. */}
+              <Link
+                href={entry.subjectHref}
+                className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-[var(--color-surface-sunk)] focus-visible:bg-[var(--color-surface-sunk)]"
               >
-                <Icon size={14} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-medium text-[var(--color-ink)]">
-                  <Link href={entry.subjectHref} className="hover:underline">
+                <span
+                  aria-hidden="true"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-sunk)] text-[var(--color-muted)]"
+                >
+                  <Icon size={14} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14px] font-medium text-[var(--color-ink)]">
                     {entry.subject}
-                  </Link>
-                  <span className="font-normal text-[var(--color-ink-soft)]">
-                    {" "}
-                    — {entry.description}
-                  </span>
+                    <span className="font-normal text-[var(--color-ink-soft)]">
+                      {" "}
+                      — {entry.description}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 text-[12px] text-[var(--color-muted)]">
+                    {KIND_LABELS[entry.kind]} · {entry.approver} ·{" "}
+                    {formatRelative(entry.approvedAt)}
+                  </div>
                 </div>
-                <div className="mt-0.5 text-[12px] text-[var(--color-muted)]">
-                  {KIND_LABELS[entry.kind]} · {entry.approver} ·{" "}
-                  {formatRelative(entry.approvedAt)}
-                </div>
-              </div>
+              </Link>
             </li>
           );
         })}
