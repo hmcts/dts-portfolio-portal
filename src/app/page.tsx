@@ -1,4 +1,5 @@
-import { Users, Plus } from "lucide-react";
+import Link from "next/link";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
@@ -21,16 +22,17 @@ export default async function HomePage() {
         title="What DTS is building, who runs it, and what's next."
         lede="One place to see the DTS landscape across all five Jurisdictions. Open a Domain to see who runs what. Click any chip on the roadmap to drill in. The detail still lives in Ardoq, Jira and Confluence — this is the front door."
         actions={
-          <>
-            <Button variant="outline">
-              <Users size={14} aria-hidden="true" />
-              Your team
-            </Button>
+          // "Your team" lived here in the prototype as a shortcut to
+          // the signed-in user's team page. Without Phase 4 (Easy
+          // Auth → Entra) there's no signed-in user to resolve, so
+          // the button had no destination and shipped inert. Removed
+          // until auth lands; restore alongside the user lookup.
+          <Link href="/upload">
             <Button variant="primary">
-              <Plus size={14} aria-hidden="true" />
+              <Upload size={14} aria-hidden="true" />
               Add content
             </Button>
-          </>
+          </Link>
         }
       />
 
