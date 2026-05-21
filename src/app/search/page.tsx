@@ -66,7 +66,7 @@ export default async function SearchResultsPage({ searchParams }: SearchPageProp
     : [[], { jurisdiction: 0, domain: 0, team: 0, product: 0, initiative: 0 }];
 
   return (
-    <div className="mx-auto max-w-[1100px]">
+    <div className="mx-auto max-w-[1480px]">
       <PageHeader
         eyebrow="Search"
         title={q ? `Results for "${q}"` : "Search the portal"}

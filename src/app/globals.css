@@ -5,12 +5,17 @@
    scripts/extract-prototype.mjs. ADR-007 + requirements spec §6.6. */
 
 @theme {
-  /* warm stones */
-  --color-canvas: #f7f6f3;
+  /* Neutral palette — values verified against the rendered prototype
+     by reading getComputedStyle(document.documentElement) tokens at
+     runtime. The standalone HTML's `:root` block has a "warm stones"
+     comment with cream values, but a runtime injection overrides
+     them to a cooler white-and-grey palette. We track the RENDERED
+     values, not the declared seed values. */
+  --color-canvas: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-sunk: #f3f1ec;
-  --color-border: #e6e2d9;
-  --color-border-strong: #d7d2c4;
+  --color-surface-sunk: #f4f4f3;
+  --color-border: #e7e5e1;
+  --color-border-strong: #d5d3cf;
   --color-ink: #1c1917;
   --color-ink-soft: #3d3a36;
   --color-muted: #6b6760;
@@ -67,6 +72,12 @@ body {
   background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  /* Prototype uses 15px as the body baseline (not the browser
+     default 16px). Smaller rhythm makes the page denser and matches
+     docs/prototype/DTS Portfolio Portal - standalone.html measured
+     at 15px on body. */
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 /* GDS-style focus ring: yellow fill with black underline for high

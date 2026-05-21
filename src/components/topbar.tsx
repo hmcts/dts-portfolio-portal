@@ -16,7 +16,7 @@ import {
 //
 // Layout: the <header> spans full width so the bottom border + the
 // degraded tint go edge-to-edge. The contents are wrapped in a
-// mx-auto max-w-[1100px] container so the Beta pill, status slot,
+// mx-auto max-w-[1480px] container so the Beta pill, status slot,
 // and search overlay align with the page content beneath it (which
 // uses the same max-width pattern). The header's outer px-8 mirrors
 // AppShell's main padding so on narrow viewports the bar contents
@@ -34,7 +34,7 @@ export function Topbar() {
 
   return (
     <header role="banner" className={headerClass}>
-      <div className="mx-auto flex h-full max-w-[1100px] items-center gap-4">
+      <div className="mx-auto flex h-full max-w-[1480px] items-center gap-4">
         <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-pill)] bg-[#1d70b8] px-2.5 py-0.5 text-[12px] font-semibold tracking-wide text-white">
           <span
             aria-hidden="true"

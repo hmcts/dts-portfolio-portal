@@ -34,11 +34,13 @@ export function RoadmapMatrix({
       className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)]"
     >
       <div className="grid grid-cols-[280px_repeat(3,1fr)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunk)] text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--color-muted)]">
-        <div className="px-4 py-3">Product Domain</div>
-        <div className="px-4 py-3">
+        <div className="border-r border-[var(--color-border)] px-4 py-3">
+          Product Domain
+        </div>
+        <div className="border-r border-[var(--color-border)] px-4 py-3">
           Now <span className="text-[var(--color-muted)] normal-case font-normal">· in flight</span>
         </div>
-        <div className="px-4 py-3">
+        <div className="border-r border-[var(--color-border)] px-4 py-3">
           Next <span className="text-[var(--color-muted)] normal-case font-normal">· committed</span>
         </div>
         <div className="px-4 py-3">
@@ -106,7 +108,7 @@ export function RoadmapMatrix({
                       key={row.domain.slug}
                       className="grid grid-cols-[280px_repeat(3,1fr)] border-t border-[var(--color-border)]"
                     >
-                      <div className="px-4 py-4">
+                      <div className="border-r border-[var(--color-border)] px-4 py-4">
                         <Link
                           href={`/d/${row.domain.slug}`}
                           className="text-[14px] font-medium text-[var(--color-ink)] hover:underline"
@@ -117,10 +119,20 @@ export function RoadmapMatrix({
                           {row.productCount} {row.productCount === 1 ? "product" : "products"}
                         </div>
                       </div>
-                      {BUCKETS.map((bucket) => (
+                      {BUCKETS.map((bucket, bucketIdx) => (
                         <div
                           key={bucket}
-                          className="flex flex-wrap content-start gap-1.5 px-4 py-4"
+                          className={cn(
+                            "flex flex-wrap content-start gap-1.5 px-4 py-4",
+                            // Vertical dividers between NOW / NEXT /
+                            // LATER cells, matching the prototype's
+                            // `.matrix-row .cell { border-right: 1px solid var(--border); }`.
+                            // The final cell omits the right border
+                            // so the table edge is the only line on
+                            // the far right.
+                            bucketIdx < BUCKETS.length - 1 &&
+                              "border-r border-[var(--color-border)]",
+                          )}
                         >
                           {row.cells[bucket].length === 0 ? (
                             <span className="self-center text-[12px] text-[var(--color-muted)]">

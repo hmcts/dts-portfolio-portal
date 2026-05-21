@@ -21,7 +21,7 @@ import { StatusPill } from "@/components/ui/status-pill";
 
 export default function Styleguide() {
   return (
-    <div className="mx-auto max-w-[1100px]">
+    <div className="mx-auto max-w-[1480px]">
       <PageHeader
         eyebrow="Phase 1 — Visual reference"
         title="Primitives"

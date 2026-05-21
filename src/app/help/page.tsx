@@ -31,7 +31,7 @@ const TEMPLATES = [
 
 export default function HelpPage() {
   return (
-    <div className="mx-auto max-w-[1100px]">
+    <div className="mx-auto max-w-[1480px]">
       <PageHeader
         eyebrow="Help & templates"
         title="Templates for adding content"

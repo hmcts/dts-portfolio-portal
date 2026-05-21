@@ -36,7 +36,7 @@ export default async function AiCostPage() {
   const totals = summarise(rows);
 
   return (
-    <div className="mx-auto max-w-[1100px]">
+    <div className="mx-auto max-w-[1480px]">
       <PageHeader
         eyebrow="Ops · AI cost"
         title="AI parsing activity"

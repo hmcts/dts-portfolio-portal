@@ -36,7 +36,7 @@ export default async function SearchAnalyticsPage() {
   const ctr = computeCtr(totals);
 
   return (
-    <div className="mx-auto max-w-[1100px]">
+    <div className="mx-auto max-w-[1480px]">
       <PageHeader
         eyebrow="Ops · Search"
         title="Search relevance"

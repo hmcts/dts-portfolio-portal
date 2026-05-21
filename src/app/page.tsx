@@ -15,7 +15,7 @@ export default async function HomePage() {
   const [matrix, activity] = await Promise.all([getMatrix(), getActivity()]);
 
   return (
-    <div className="mx-auto max-w-[1100px]">
+    <div className="mx-auto max-w-[1480px]">
       <PageHeader
         eyebrow="HMCTS · Digital and Technology Services"
         title="What DTS is building, who runs it, and what's next."
