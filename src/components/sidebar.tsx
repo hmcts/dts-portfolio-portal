@@ -6,9 +6,8 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   ChevronRight,
-  Plus,
+  Upload,
   HelpCircle,
-  Scale,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -18,6 +17,14 @@ import { cn } from "@/lib/cn";
 // their choice. Read-after-mount and write-on-change keeps the SSR
 // render deterministic ("Crime expanded" matches the prototype).
 const SIDEBAR_STORAGE_KEY = "dts-portal:sidebar:jurisdictions";
+
+// The seed stores Domain names as "<Theme> Domain" (e.g. "Common
+// Platform Domain"). The prototype's sidebar lists them without the
+// suffix to keep each row compact. Entity pages still use the full
+// name as the title so the data layer keeps it intact.
+function trimDomainSuffix(name: string): string {
+  return name.replace(/\s+Domain$/i, "");
+}
 
 // Shape of one Jurisdiction in the sidebar nav. Sourced from
 // getSidebarJurisdictions() in portal-data.ts so counts + lists
@@ -173,19 +180,22 @@ export function Sidebar({
                     : "text-[var(--color-ink-soft)] hover:bg-[var(--color-surface-sunk)]",
                 )}
               >
-                <Scale size={16} aria-hidden="true" />
-                <span className="flex-1 truncate">{j.name}</span>
-                <span className="text-[12px] text-[var(--color-muted)]">
-                  {j.count}
-                </span>
+                {/* Chevron leads — the prototype puts the
+                    open/closed indicator BEFORE the Jurisdiction
+                    name. No Scale icon: the prototype omits any
+                    Jurisdiction-row icon entirely. */}
                 <ChevronRight
                   size={14}
                   aria-hidden="true"
                   className={cn(
-                    "transition-transform",
+                    "shrink-0 text-[var(--color-muted)] transition-transform",
                     open && "rotate-90",
                   )}
                 />
+                <span className="flex-1 truncate">{j.name}</span>
+                <span className="text-[12px] text-[var(--color-muted)]">
+                  {j.count}
+                </span>
               </button>
               {open && j.domains.length > 0 ? (
                 <div id={`nav-${j.slug}`} className="ml-7 mt-0.5 flex flex-col gap-0.5">
@@ -193,7 +203,7 @@ export function Sidebar({
                     <NavItem
                       key={d.slug}
                       href={`/d/${d.slug}`}
-                      label={d.name}
+                      label={trimDomainSuffix(d.name)}
                       active={isActive(`/d/${d.slug}`)}
                       small
                     />
@@ -216,7 +226,7 @@ export function Sidebar({
         </div>
         <NavItem
           href="/upload"
-          icon={Plus}
+          icon={Upload}
           label="Add content"
           active={isActive("/upload")}
         />
