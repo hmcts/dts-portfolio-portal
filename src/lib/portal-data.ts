@@ -113,6 +113,7 @@ export async function getMatrix(): Promise<MatrixJurisdictionBand[]> {
         p.initiatives.map((i) => ({
           ...initiativeToSeedShape(i),
           productName: p.name,
+          productHref: `/p/${p.slug}`,
         })),
       );
       return {

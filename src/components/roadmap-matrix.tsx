@@ -147,6 +147,7 @@ export function RoadmapMatrix({
                                 key={i.id}
                                 initiative={i}
                                 productName={i.productName}
+                                productHref={i.productHref}
                               />
                             ))
                           )}
