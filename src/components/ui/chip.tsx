@@ -42,7 +42,11 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
       ref={ref}
       type="button"
       className={cn(chipStyles({ bucket }), className)}
-      title={hint ?? label}
+      // Only render the native title tooltip when an explicit hint
+      // is supplied. Chips that surface their detail through a click
+      // affordance (e.g. InitiativeChip → Sheet drawer) pass no hint
+      // and therefore have no hover popup.
+      title={hint}
       {...props}
     >
       <span className="truncate">{label}</span>

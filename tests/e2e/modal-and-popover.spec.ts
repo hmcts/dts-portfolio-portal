@@ -1,10 +1,12 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-// Modal-as-detail (§6.2) + Initiative popover (§5.6). Validates that
+// Modal-as-detail (§6.2) + Initiative drawer (§5.6). Validates that
 // clicking a Product card on the Domain page opens a slide-over with
 // the Product's details — focus trapped, restoration on close. And
-// that clicking a chip on the home matrix opens the popover.
+// that clicking a chip on the home matrix opens the right-anchored
+// detail drawer (replaces the previous popover affordance to match
+// the prototype's click model).
 
 test("Domain page Product cards open as slide-over modals", async ({ page }) => {
   await page.goto("/d/common-platform");
@@ -33,24 +35,26 @@ test("Domain page Product cards open as slide-over modals", async ({ page }) => 
   await expect(dialog).not.toBeVisible();
 });
 
-test("Home matrix Initiative chips open a popover", async ({ page }) => {
+test("Home matrix Initiative chips open a detail drawer", async ({ page }) => {
   await page.goto("/");
 
   const chip = page.getByRole("button", {
     name: /Sign-in latency reduction/,
   });
   await expect(chip).toBeVisible();
+  // No native hover tooltip — the chip suppresses the `title` attr so
+  // detail is reached only via click.
+  await expect(chip).not.toHaveAttribute("title", /./);
   await chip.click();
 
-  // Radix uses role="dialog" for popover content too
-  const popover = page.locator(
+  const drawer = page.locator(
     '[role="dialog"]:has-text("Sign-in latency reduction")',
   );
-  await expect(popover).toBeVisible();
+  await expect(drawer).toBeVisible();
 
   // Press Escape to dismiss
   await page.keyboard.press("Escape");
-  await expect(popover).not.toBeVisible();
+  await expect(drawer).not.toBeVisible();
 });
 
 test("Slide-over modal passes axe scan when open", async ({ page }) => {

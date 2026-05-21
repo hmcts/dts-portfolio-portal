@@ -3,15 +3,28 @@
 import { ExternalLink } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from "@/components/ui/sheet";
 import type { Initiative, TimeBucket } from "@/lib/entities";
 
-// Initiative chip with a popover per requirements spec §5.6 — click
-// the chip to see one-line description, owner, and outbound link.
-// The chip itself is a button; the popover is anchored to it.
+// Initiative chip with a slide-over Sheet on click. Matches the
+// prototype's drawer-style detail surface (right-anchored, focus
+// trapped, ESC to close).
+//
+// No hover tooltip — `hint` is intentionally not passed to the
+// underlying Chip primitive so the browser-native `title` popup is
+// suppressed; the drawer carries the full detail instead.
+
+const BUCKET_LABELS: Record<TimeBucket, string> = {
+  NOW: "Now · in flight",
+  NEXT: "Next · committed",
+  LATER: "Later · acknowledged",
+};
 
 export function InitiativeChip({
   initiative,
@@ -20,25 +33,23 @@ export function InitiativeChip({
   initiative: Initiative;
   productName?: string;
 }) {
+  const bucket = initiative.bucket as TimeBucket;
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Chip
-          bucket={initiative.bucket as TimeBucket}
-          label={initiative.title}
-          hint={initiative.description ?? initiative.title}
-        />
-      </PopoverTrigger>
-      <PopoverContent>
-        <div className="flex flex-col gap-2">
+    <Sheet>
+      <SheetTrigger asChild>
+        <Chip bucket={bucket} label={initiative.title} />
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
           <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--color-muted)]">
-            {initiative.bucket} · {productName ?? "Initiative"}
+            {BUCKET_LABELS[bucket]}
+            {productName ? ` · on ${productName}` : null}
           </div>
-          <div className="text-[15px] font-medium text-[var(--color-ink)]">
-            {initiative.title}
-          </div>
+          <SheetTitle>{initiative.title}</SheetTitle>
+        </SheetHeader>
+        <SheetBody>
           {initiative.description ? (
-            <p className="text-[13px] text-[var(--color-ink-soft)]">
+            <p className="text-[14px] text-[var(--color-ink-soft)]">
               {initiative.description}
             </p>
           ) : null}
@@ -47,14 +58,14 @@ export function InitiativeChip({
               href={initiative.outboundUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-1 inline-flex items-center gap-1.5 text-[12px] text-[var(--color-ink-soft)] hover:underline"
+              className="mt-5 inline-flex items-center gap-1.5 text-[13px] text-[var(--color-ink-soft)] hover:underline"
             >
               Open source
               <ExternalLink size={12} aria-hidden="true" />
             </a>
           ) : null}
-        </div>
-      </PopoverContent>
-    </Popover>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
