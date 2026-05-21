@@ -106,20 +106,22 @@ export async function getMatrix(): Promise<MatrixJurisdictionBand[]> {
       return a.name.localeCompare(b.name);
     });
     const rows: MatrixDomainRow[] = orderedDomains.map((d) => {
-      const initiativesForD = d.products.flatMap((p) => p.initiatives);
+      // Pair each Initiative with its parent Product name as we
+      // flatten, so the detail drawer can show "on <Product>"
+      // without re-querying.
+      const initiativesForD = d.products.flatMap((p) =>
+        p.initiatives.map((i) => ({
+          ...initiativeToSeedShape(i),
+          productName: p.name,
+        })),
+      );
       return {
         domain: domainToSeedShape(d, j.slug),
         productCount: d.products.length,
         cells: {
-          NOW: initiativesForD
-            .filter((i) => i.bucket === "NOW")
-            .map(initiativeToSeedShape),
-          NEXT: initiativesForD
-            .filter((i) => i.bucket === "NEXT")
-            .map(initiativeToSeedShape),
-          LATER: initiativesForD
-            .filter((i) => i.bucket === "LATER")
-            .map(initiativeToSeedShape),
+          NOW: initiativesForD.filter((i) => i.bucket === "NOW"),
+          NEXT: initiativesForD.filter((i) => i.bucket === "NEXT"),
+          LATER: initiativesForD.filter((i) => i.bucket === "LATER"),
         },
       };
     });

@@ -362,82 +362,87 @@ const products: Seed["products"] = [
   },
 ];
 
+// All `outboundUrl` values use the RFC 2606 reserved `example.com`
+// domain — clearly fictional, no risk of confusion with any real
+// HMCTS-internal URL. Ticket IDs are fictional codes prefixed by a
+// domain shorthand so each chip's "Open source" link feels realistic
+// without inventing a system that exists.
 const initiatives: Seed["initiatives"] = [
   // Common Platform — NOW
   { id: "i-cp-now-1", productId: "p-common-platform", bucket: "NOW", title: "Sample workstream — auth flow migration", description: "Move remaining tenants off the legacy flow." },
-  { id: "i-cp-now-2", productId: "p-sign-in", bucket: "NOW", title: "Sign-in latency reduction", description: "Sub-700ms p95 across Crime services." },
-  { id: "i-cp-now-3", productId: "p-document-store", bucket: "NOW", title: "Schema v2 rollout", description: "Backwards-compatible migration to v2 envelope." },
+  { id: "i-cp-now-2", productId: "p-sign-in", bucket: "NOW", title: "Sign-in latency reduction", description: "Sub-700ms p95 across Crime services.", outboundUrl: "https://tickets.example.com/browse/IDAM-1248" },
+  { id: "i-cp-now-3", productId: "p-document-store", bucket: "NOW", title: "Schema v2 rollout", description: "Backwards-compatible migration to v2 envelope.", outboundUrl: "https://tickets.example.com/browse/DOCS-934" },
   { id: "i-cp-now-4", productId: "p-document-store", bucket: "NOW", title: "Database upgrade", description: "Three remaining clusters." },
   { id: "i-cp-now-5", productId: "p-pay", bucket: "NOW", title: "Template content review", description: "Audit across existing payment templates." },
-  { id: "i-cp-now-6", productId: "p-pay", bucket: "NOW", title: "Refunds queue redesign", description: "Cut median refund time." },
-  { id: "i-cp-now-7", productId: "p-listings", bucket: "NOW", title: "Tenant A listings migration", description: "Move remaining listings off legacy by Q3." },
-  { id: "i-cp-now-8", productId: "p-listings", bucket: "NOW", title: "Listing-conflict warning UI" },
+  { id: "i-cp-now-6", productId: "p-pay", bucket: "NOW", title: "Refunds queue redesign", description: "Cut median refund time from 14 days to under 5.", outboundUrl: "https://tickets.example.com/browse/PAY-512" },
+  { id: "i-cp-now-7", productId: "p-listings", bucket: "NOW", title: "Tenant A listings migration", description: "Move remaining listings off legacy by Q3.", outboundUrl: "https://tickets.example.com/browse/LIST-201" },
+  { id: "i-cp-now-8", productId: "p-listings", bucket: "NOW", title: "Listing-conflict warning UI", description: "Surface scheduling clashes at point of booking." },
 
   // Common Platform — NEXT
-  { id: "i-cp-next-1", productId: "p-sign-in", bucket: "NEXT", title: "Passkeys pilot — internal users", description: "Small internal pilot group." },
+  { id: "i-cp-next-1", productId: "p-sign-in", bucket: "NEXT", title: "Passkeys pilot — internal users", description: "Small internal pilot group ahead of broader rollout.", outboundUrl: "https://tickets.example.com/browse/IDAM-1310" },
   { id: "i-cp-next-2", productId: "p-common-platform", bucket: "NEXT", title: "Tenant self-service", description: "Let partner orgs manage their own users." },
-  { id: "i-cp-next-3", productId: "p-document-store", bucket: "NEXT", title: "Bulk-record API", description: "Move records between tenants without downtime." },
-  { id: "i-cp-next-4", productId: "p-sign-in", bucket: "NEXT", title: "Per-user mute and digest controls" },
-  { id: "i-cp-next-5", productId: "p-pay", bucket: "NEXT", title: "Pay-by-bank pilot" },
-  { id: "i-cp-next-6", productId: "p-listings", bucket: "NEXT", title: "Public hearing-lookup page" },
+  { id: "i-cp-next-3", productId: "p-document-store", bucket: "NEXT", title: "Bulk-record API", description: "Move records between tenants without downtime.", outboundUrl: "https://tickets.example.com/browse/DOCS-1041" },
+  { id: "i-cp-next-4", productId: "p-sign-in", bucket: "NEXT", title: "Per-user mute and digest controls", description: "Give users a low-friction way to dial down notifications." },
+  { id: "i-cp-next-5", productId: "p-pay", bucket: "NEXT", title: "Pay-by-bank pilot", description: "Open Banking rails alongside the existing card path." },
+  { id: "i-cp-next-6", productId: "p-listings", bucket: "NEXT", title: "Public hearing-lookup page", description: "External-facing search over published hearings." },
   { id: "i-cp-next-7", productId: "p-hmc", bucket: "NEXT", title: "Interpreter routing fix", description: "Mixed-language hearing routing." },
 
   // Common Platform — LATER
-  { id: "i-cp-later-1", productId: "p-sign-in", bucket: "LATER", title: "Retire legacy identity brokers", description: "Decommission remaining brokers." },
+  { id: "i-cp-later-1", productId: "p-sign-in", bucket: "LATER", title: "Retire legacy identity brokers", description: "Decommission remaining brokers once new tenant onboarding lands." },
   { id: "i-cp-later-2", productId: "p-document-store", bucket: "LATER", title: "Event-sourcing re-platform", description: "Long-term direction; sample spike only." },
-  { id: "i-cp-later-3", productId: "p-pay", bucket: "LATER", title: "Bring letter print in-house" },
-  { id: "i-cp-later-4", productId: "p-pay", bucket: "LATER", title: "Card-on-file for repeat users" },
-  { id: "i-cp-later-5", productId: "p-common-platform", bucket: "LATER", title: "New tenant onboarding" },
+  { id: "i-cp-later-3", productId: "p-pay", bucket: "LATER", title: "Bring letter print in-house", description: "Replace the third-party print fulfilment supplier." },
+  { id: "i-cp-later-4", productId: "p-pay", bucket: "LATER", title: "Card-on-file for repeat users", description: "Stored-payment flow for known users; saves a hop." },
+  { id: "i-cp-later-5", productId: "p-common-platform", bucket: "LATER", title: "New tenant onboarding", description: "End-to-end self-service for a new partner organisation." },
 
   // Courtroom & Hearings — NOW
-  { id: "i-ch-now-1", productId: "p-transcription", bucket: "NOW", title: "Legacy audio-store migration" },
-  { id: "i-ch-now-2", productId: "p-transcription", bucket: "NOW", title: "Transcription supplier re-procurement" },
-  { id: "i-ch-now-3", productId: "p-courtroom-display", bucket: "NOW", title: "Picker component rewrite" },
-  { id: "i-ch-now-4", productId: "p-courtroom-display", bucket: "NOW", title: "Offline fallback for flaky Wi-Fi" },
-  { id: "i-ch-now-5", productId: "p-hmc", bucket: "NOW", title: "Browser-based fallback for participants" },
+  { id: "i-ch-now-1", productId: "p-transcription", bucket: "NOW", title: "Legacy audio-store migration", description: "Re-home audio off the deprecated store before EOL." },
+  { id: "i-ch-now-2", productId: "p-transcription", bucket: "NOW", title: "Transcription supplier re-procurement", description: "Run the open competition; commercials close end of Q3.", outboundUrl: "https://tickets.example.com/browse/TRANS-78" },
+  { id: "i-ch-now-3", productId: "p-courtroom-display", bucket: "NOW", title: "Picker component rewrite", description: "Replace the legacy in-court list picker.", outboundUrl: "https://tickets.example.com/browse/CRD-410" },
+  { id: "i-ch-now-4", productId: "p-courtroom-display", bucket: "NOW", title: "Offline fallback for flaky Wi-Fi", description: "Cache the active list so a brief network drop doesn't blank the screen." },
+  { id: "i-ch-now-5", productId: "p-hmc", bucket: "NOW", title: "Browser-based fallback for participants", description: "Web-only join route when the native client can't install.", outboundUrl: "https://tickets.example.com/browse/HMC-622" },
 
   // Courtroom & Hearings — NEXT
-  { id: "i-ch-next-1", productId: "p-transcription", bucket: "NEXT", title: "Speaker-attribution beta" },
-  { id: "i-ch-next-2", productId: "p-hmc", bucket: "NEXT", title: "Phase 2 site rollout" },
-  { id: "i-ch-next-3", productId: "p-hmc", bucket: "NEXT", title: "Interpreter routing" },
+  { id: "i-ch-next-1", productId: "p-transcription", bucket: "NEXT", title: "Speaker-attribution beta", description: "Auto-label speakers in the transcript using diarisation.", outboundUrl: "https://tickets.example.com/browse/TRANS-94" },
+  { id: "i-ch-next-2", productId: "p-hmc", bucket: "NEXT", title: "Phase 2 site rollout", description: "Extend the new build to the Phase 2 cohort of sites." },
+  { id: "i-ch-next-3", productId: "p-hmc", bucket: "NEXT", title: "Interpreter routing", description: "Connect remote interpreters to the right hearing reliably." },
 
   // Courtroom & Hearings — LATER
-  { id: "i-ch-later-1", productId: "p-hmc", bucket: "LATER", title: "Phase 2 site pilot" },
-  { id: "i-ch-later-2", productId: "p-transcription", bucket: "LATER", title: "Voice-assisted capture spike" },
-  { id: "i-ch-later-3", productId: "p-transcription", bucket: "LATER", title: "Recording retention review" },
+  { id: "i-ch-later-1", productId: "p-hmc", bucket: "LATER", title: "Phase 2 site pilot", description: "Pre-rollout dogfooding at a single Phase 2 site." },
+  { id: "i-ch-later-2", productId: "p-transcription", bucket: "LATER", title: "Voice-assisted capture spike", description: "Explore live-transcript-driven note capture at hearings." },
+  { id: "i-ch-later-3", productId: "p-transcription", bucket: "LATER", title: "Recording retention review", description: "Re-confirm retention windows against the latest information-rights guidance." },
 
   // Case Preparation — NOW
-  { id: "i-cprep-now-1", productId: "p-resulting-assistant", bucket: "NOW", title: "Runtime upgrade across services" },
-  { id: "i-cprep-now-2", productId: "p-resulting-assistant", bucket: "NOW", title: "Performance hotfix — sample workstream" },
-  { id: "i-cprep-now-3", productId: "p-resulting-assistant", bucket: "NOW", title: "Lifecycle UI rebuild" },
+  { id: "i-cprep-now-1", productId: "p-resulting-assistant", bucket: "NOW", title: "Runtime upgrade across services", description: "Bring the service mesh to a supported runtime line." },
+  { id: "i-cprep-now-2", productId: "p-resulting-assistant", bucket: "NOW", title: "Performance hotfix — sample workstream", description: "Cut the long-tail latency on the result-set page." },
+  { id: "i-cprep-now-3", productId: "p-resulting-assistant", bucket: "NOW", title: "Lifecycle UI rebuild", description: "Replace the legacy lifecycle status board with a single timeline." },
 
   // Case Preparation — NEXT
-  { id: "i-cprep-next-1", productId: "p-resulting-assistant", bucket: "NEXT", title: "Procedure consolidation" },
-  { id: "i-cprep-next-2", productId: "p-resulting-assistant", bucket: "NEXT", title: "Partner-firm self-service onboarding" },
+  { id: "i-cprep-next-1", productId: "p-resulting-assistant", bucket: "NEXT", title: "Procedure consolidation", description: "Merge the three legacy procedure variants into a single flow.", outboundUrl: "https://tickets.example.com/browse/RES-188" },
+  { id: "i-cprep-next-2", productId: "p-resulting-assistant", bucket: "NEXT", title: "Partner-firm self-service onboarding", description: "Let partner firms register and configure their own users." },
 
   // Case Preparation — LATER
-  { id: "i-cprep-later-1", productId: "p-resulting-assistant", bucket: "LATER", title: "Open API for external consumers" },
+  { id: "i-cprep-later-1", productId: "p-resulting-assistant", bucket: "LATER", title: "Open API for external consumers", description: "Public, versioned API for partner integrations." },
 
   // Civil
-  { id: "i-civ-now-1", productId: "p-civil-money-claims", bucket: "NOW", title: "Welsh-language form parity" },
-  { id: "i-civ-now-2", productId: "p-civil-judgments", bucket: "NOW", title: "Bulk signing for high-volume firms" },
-  { id: "i-civ-next-1", productId: "p-civil-money-claims", bucket: "NEXT", title: "Letter content review" },
-  { id: "i-civ-later-1", productId: "p-civil-judgments", bucket: "LATER", title: "Open data feed" },
+  { id: "i-civ-now-1", productId: "p-civil-money-claims", bucket: "NOW", title: "Welsh-language form parity", description: "Close the remaining Welsh-language gaps on the claim journey.", outboundUrl: "https://tickets.example.com/browse/CMC-303" },
+  { id: "i-civ-now-2", productId: "p-civil-judgments", bucket: "NOW", title: "Bulk signing for high-volume firms", description: "Let approved firms sign batches in one go." },
+  { id: "i-civ-next-1", productId: "p-civil-money-claims", bucket: "NEXT", title: "Letter content review", description: "Audit and refresh the outbound letter library." },
+  { id: "i-civ-later-1", productId: "p-civil-judgments", bucket: "LATER", title: "Open data feed", description: "Publish anonymised judgments data on a public feed." },
 
   // Family
-  { id: "i-fam-now-1", productId: "p-family-care", bucket: "NOW", title: "Local-authority bulk import" },
-  { id: "i-fam-now-2", productId: "p-family-care", bucket: "NOW", title: "Hearing-bundle generator" },
-  { id: "i-fam-next-1", productId: "p-family-care", bucket: "NEXT", title: "Court-bundle PDF assembly" },
+  { id: "i-fam-now-1", productId: "p-family-care", bucket: "NOW", title: "Local-authority bulk import", description: "Bulk-ingest cases from LA case-management systems.", outboundUrl: "https://tickets.example.com/browse/FAM-141" },
+  { id: "i-fam-now-2", productId: "p-family-care", bucket: "NOW", title: "Hearing-bundle generator", description: "Assemble a hearing-ready bundle PDF from indexed evidence.", outboundUrl: "https://tickets.example.com/browse/FAM-152" },
+  { id: "i-fam-next-1", productId: "p-family-care", bucket: "NEXT", title: "Court-bundle PDF assembly", description: "Pre-paginated, bookmarked bundles for the bench." },
 
   // Tribunals
-  { id: "i-trib-now-1", productId: "p-employment-claims", bucket: "NOW", title: "Multiple-claimant submission API" },
-  { id: "i-trib-next-1", productId: "p-employment-claims", bucket: "NEXT", title: "Online help signposting" },
-  { id: "i-trib-later-1", productId: "p-employment-claims", bucket: "LATER", title: "Outcome publication" },
+  { id: "i-trib-now-1", productId: "p-employment-claims", bucket: "NOW", title: "Multiple-claimant submission API", description: "API for representative bodies to submit grouped claims.", outboundUrl: "https://tickets.example.com/browse/ET-220" },
+  { id: "i-trib-next-1", productId: "p-employment-claims", bucket: "NEXT", title: "Online help signposting", description: "Inline guidance pointing to the right help article at each step." },
+  { id: "i-trib-later-1", productId: "p-employment-claims", bucket: "LATER", title: "Outcome publication", description: "Publish anonymised case outcomes on a public landing page." },
 
   // Administrative
-  { id: "i-adm-now-1", productId: "p-correspondence", bucket: "NOW", title: "Template review across products" },
-  { id: "i-adm-next-1", productId: "p-correspondence", bucket: "NEXT", title: "Welsh-language audit" },
-  { id: "i-adm-later-1", productId: "p-correspondence", bucket: "LATER", title: "Letter-quality survey" },
+  { id: "i-adm-now-1", productId: "p-correspondence", bucket: "NOW", title: "Template review across products", description: "Cross-product audit of outbound correspondence templates." },
+  { id: "i-adm-next-1", productId: "p-correspondence", bucket: "NEXT", title: "Welsh-language audit", description: "Confirm every template has a current Welsh version." },
+  { id: "i-adm-later-1", productId: "p-correspondence", bucket: "LATER", title: "Letter-quality survey", description: "Recipient-side feedback on letter clarity and tone." },
 ];
 
 const activity: Seed["activity"] = [

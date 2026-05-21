@@ -18,15 +18,22 @@ import type {
 // Same shapes / same signatures as the original portal-data.ts so
 // the DB-backed wrappers can fall through to these by name.
 
+// Matrix-shaped Initiative carries the parent Product's display name
+// alongside the raw Initiative fields. Used by the detail drawer
+// opened from the roadmap matrix — the eyebrow reads
+// "NOW · in flight · on <Product>" so the user knows which Product
+// owns the chip without leaving the matrix view.
+export type MatrixInitiative = Initiative & { productName: string };
+
 export interface MatrixCell {
   bucket: TimeBucket;
-  initiatives: Initiative[];
+  initiatives: MatrixInitiative[];
 }
 
 export interface MatrixDomainRow {
   domain: ProductDomain;
   productCount: number;
-  cells: Record<TimeBucket, Initiative[]>;
+  cells: Record<TimeBucket, MatrixInitiative[]>;
 }
 
 export interface MatrixJurisdictionBand {
@@ -45,9 +52,10 @@ export function getMatrix(): MatrixJurisdictionBand[] {
       const productsForD = portalContent.products.filter(
         (p) => p.domainSlug === domain.slug,
       );
-      const initiativesForD = portalContent.initiatives.filter((i) =>
-        productsForD.some((p) => p.id === i.productId),
-      );
+      const productNameById = new Map(productsForD.map((p) => [p.id, p.name]));
+      const initiativesForD: MatrixInitiative[] = portalContent.initiatives
+        .filter((i) => productNameById.has(i.productId))
+        .map((i) => ({ ...i, productName: productNameById.get(i.productId)! }));
       return {
         domain,
         productCount: productsForD.length,
