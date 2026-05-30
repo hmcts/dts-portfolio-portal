@@ -68,6 +68,11 @@ async def test_get_domain_by_slug_returns_domain(db_session):
     d = await get_domain_by_slug(db_session, "test-domain-slug")
     assert d is not None
     assert d.name == "Test Domain"
+    # Verify the selectinload(strategic_themes) eager-load is working — if the
+    # eager-load is removed, this will fail with MissingGreenlet (lazy-load
+    # after session close) rather than passing silently.
+    assert len(d.strategic_themes) == 1  # type: ignore[attr-defined]
+    assert d.strategic_themes[0].title == "Reduce sprawl"  # type: ignore[attr-defined]
 
 
 async def test_get_domain_by_slug_returns_none_for_missing(db_session):

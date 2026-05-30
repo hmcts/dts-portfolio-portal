@@ -15,8 +15,7 @@ from sqlalchemy.orm import selectinload
 from app.models.jurisdiction import Jurisdiction
 from app.models.product import Product
 from app.models.product_domain import ProductDomain
-
-JURISDICTION_ORDER: tuple[str, ...] = ("crime", "civil", "family", "tribunals", "administrative")
+from app.repositories._ordering import jurisdiction_rank
 
 
 class MatrixInitiative(BaseModel):
@@ -47,10 +46,6 @@ class MatrixJurisdictionBand(BaseModel):
     rows: list[MatrixDomainRow]
 
 
-def _jurisdiction_rank(slug: str) -> int:
-    return JURISDICTION_ORDER.index(slug) if slug in JURISDICTION_ORDER else len(JURISDICTION_ORDER)
-
-
 async def get_matrix(session: AsyncSession) -> Sequence[MatrixJurisdictionBand]:
     """Return all jurisdictions with their domain rows and bucketed initiative cells."""
     result = await session.execute(
@@ -63,7 +58,7 @@ async def get_matrix(session: AsyncSession) -> Sequence[MatrixJurisdictionBand]:
         ),
     )
     jurisdictions = list(result.scalars().unique())
-    jurisdictions.sort(key=lambda j: _jurisdiction_rank(j.slug))
+    jurisdictions.sort(key=lambda j: jurisdiction_rank(j.slug))
 
     bands: list[MatrixJurisdictionBand] = []
     for j in jurisdictions:

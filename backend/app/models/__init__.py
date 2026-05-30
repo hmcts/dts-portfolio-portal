@@ -10,7 +10,8 @@ from app.models.search_event import SearchEvent  # noqa: F401
 from app.models.team import Team  # noqa: F401
 
 # Relationship declarations must be imported last — declaring them before the
-# table classes would cause circular imports.  The isort: skip_file comment
-# below suppresses ruff's I001 for this file only.
+# table classes would cause circular imports.  The "# isort: split" directive
+# below creates a separate import block so ruff doesn't reorder relationships
+# ahead of the models it references.
 # isort: split
 import app.models.relationships  # noqa: F401
