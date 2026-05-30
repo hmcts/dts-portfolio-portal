@@ -3,3 +3,4 @@
 from app.models.jurisdiction import Jurisdiction  # noqa: F401
 from app.models.product_domain import ProductDomain, StrategicTheme  # noqa: F401
 from app.models.team import Team  # noqa: F401
+from app.models.product import OutboundLink, Product  # noqa: F401
