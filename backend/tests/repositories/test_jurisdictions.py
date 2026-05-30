@@ -2,6 +2,8 @@
 
 from datetime import datetime
 
+from sqlalchemy import text
+
 from app.models.jurisdiction import Jurisdiction
 from app.models.product import Product
 from app.models.product_domain import ProductDomain
@@ -55,9 +57,7 @@ async def _seed(db_session):
     await db_session.flush()
     # Insert into the M2M join table: A = Jurisdiction.id, B = Product.id
     await db_session.execute(
-        __import__("sqlalchemy").text(
-            'INSERT INTO "_ConsumedByJurisdiction" ("A", "B") VALUES (:a, :b)'
-        ),
+        text('INSERT INTO "_ConsumedByJurisdiction" ("A", "B") VALUES (:a, :b)'),
         {"a": "j_test_family", "b": "p_test_civil_prod"},
     )
     await db_session.flush()
@@ -93,3 +93,13 @@ async def test_get_products_consumed_by_returns_products(db_session):
     products = await get_products_consumed_by(db_session, "test-family")
     assert len(products) == 1
     assert products[0].slug == "test-civil-product"
+    # Verify camelCase DB columns are correctly mapped — these were silently
+    # None when the function used raw SQL with Product(**row._mapping).
+    assert products[0].domain_id == "d_test_civil"
+    assert products[0].operating_team_id == "t_test_j"
+
+
+async def test_get_products_consumed_by_returns_empty_for_no_match(db_session):
+    await _seed(db_session)
+    products = await get_products_consumed_by(db_session, "test-civil")
+    assert products == []

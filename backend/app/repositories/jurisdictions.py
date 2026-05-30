@@ -50,15 +50,24 @@ async def get_products_consumed_by(
     ``_ConsumedByJurisdiction`` is a Prisma-implicit M2M join table with
     columns ``"A"`` (Jurisdiction.id) and ``"B"`` (Product.id), following
     Prisma's alphabetical ordering (J before P).
+
+    We fetch product IDs via raw SQL (the join table has no SQLModel class)
+    then load the matching Product rows through the ORM so that all
+    camelCase DB columns are correctly mapped to snake_case model fields.
     """
-    rows = await session.execute(
-        text("""
-            SELECT p.*
-              FROM "Product" p
-              JOIN "_ConsumedByJurisdiction" cj ON cj."B" = p.id
+    id_rows = await session.execute(
+        text(
+            """
+            SELECT cj."B" AS product_id
+              FROM "_ConsumedByJurisdiction" cj
               JOIN "Jurisdiction" j ON j.id = cj."A"
              WHERE j.slug = :slug
-        """),
+            """
+        ),
         {"slug": jurisdiction_slug},
     )
-    return [Product(**row._mapping) for row in rows]
+    product_ids = [r.product_id for r in id_rows]
+    if not product_ids:
+        return []
+    result = await session.execute(select(Product).where(Product.id.in_(product_ids)))
+    return list(result.scalars())
