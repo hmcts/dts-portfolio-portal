@@ -4,7 +4,7 @@ A high-level, single-front-door view of delivery information across DTS in HMCTS
 
 ## Status
 
-**Phase 1 — Scaffold.** Stack is locked (see ADRs in [docs/decisions/](docs/decisions/)); Next.js + Prisma + Postgres + Tailwind + shadcn/ui foundation up and running.
+**Post-cutover (Group K).** Read path fully served by the Python/FastAPI backend. Stack: Next.js (App Router) frontend + FastAPI Python backend + Caddy reverse proxy, all in Docker Compose. Prisma has been removed; the backend uses SQLModel (Pydantic + SQLAlchemy 2.0) + Alembic. Write path (upload + approvals) is temporarily stubbed pending the Python write-path port.
 
 ## Where things live
 
@@ -28,9 +28,10 @@ A high-level, single-front-door view of delivery information across DTS in HMCTS
 
 | Layer | Choice | ADR |
 |---|---|---|
-| Framework | Next.js (App Router) + React + TypeScript | [001](docs/decisions/2026-05-19-adr-001-web-framework.md) |
+| Frontend | Next.js (App Router) + React + TypeScript | [001](docs/decisions/2026-05-19-adr-001-web-framework.md) |
+| Backend | FastAPI + Python 3.12+ (served at `/api/*` via Caddy) | [001](docs/decisions/2026-05-19-adr-001-web-framework.md) |
 | Database | Azure Database for PostgreSQL Flexible Server (Entra-only auth) | [002](docs/decisions/2026-05-19-adr-002-content-store.md) |
-| ORM | Prisma 7 + driver-adapter (`@prisma/adapter-pg`) | [002](docs/decisions/2026-05-19-adr-002-content-store.md) |
+| ORM | SQLModel (Pydantic + SQLAlchemy 2.0) + Alembic | [002](docs/decisions/2026-05-19-adr-002-content-store.md) |
 | AI | Azure OpenAI (structured-output mode + answer-card synthesis) | [003](docs/decisions/2026-05-19-adr-003-ai-parser.md) |
 | Search | Postgres full-text search | [004](docs/decisions/2026-05-19-adr-004-search-backend.md) |
 | Auth | Easy Auth → Microsoft Entra ID | [005](docs/decisions/2026-05-19-adr-005-authentication.md) |
@@ -66,14 +67,12 @@ OS support: macOS (Apple Silicon and Intel) and Linux are both routinely used. W
 
 ```bash
 make install                          # installs both halves
-docker compose up -d database         # bring up Postgres
-make backend-migrate                  # apply migrations (creates schema)
-make up                               # bring up all containers
+docker compose up -d db               # bring up Postgres
+make backend-migrate                  # apply Alembic migrations (creates schema)
+make up                               # bring up all containers (backend + frontend + Caddy)
 ```
 
 Open <http://localhost:3000>.
-
-> **Note:** `make backend-migrate` (Alembic) becomes functional once the Python backend lands (Group B of the restack). Until then, use `cd frontend && pnpm db:migrate:deploy` to apply the Prisma migrations.
 
 ### Working on one half
 
@@ -90,17 +89,19 @@ If you'd rather run the steps yourself without `make`:
 ```bash
 # Install dependencies
 cd frontend && pnpm install --frozen-lockfile && cd ..
+cd backend && uv sync && cd ..
 
 # Copy the example env and adjust if needed
 cp .env.example .env.local
 
 # Start Postgres in the background
-docker compose up -d database
+docker compose up -d db
 
-# Apply Prisma migrations (creates the schema in the local DB)
-cd frontend && pnpm db:migrate:deploy
+# Apply Alembic migrations (creates the schema in the local DB)
+make backend-migrate
 
-# Boot the Next.js dev server with HMR
+# Boot the Python backend and Next.js dev server
+cd backend && uv run uvicorn app.main:app --reload --port 8000 &
 cd frontend && pnpm dev
 ```
 
@@ -116,10 +117,10 @@ docker compose --profile tools up -d pgadmin
 ### Optional: run in a container locally
 
 ```bash
-docker compose --profile app up --build
+docker compose up --build
 ```
 
-Runs the production image instead of `pnpm dev`. Same image App Service runs in prod.
+Runs the production images (frontend + backend + Caddy) instead of `pnpm dev`. Same images App Service runs in prod.
 
 ## Day-to-day commands
 
@@ -147,10 +148,6 @@ Runs the production image instead of `pnpm dev`. Same image App Service runs in 
 | `cd frontend && pnpm test:watch` | Vitest in watch mode |
 | `cd frontend && pnpm test:e2e` | Playwright end-to-end + axe a11y |
 | `cd frontend && pnpm format` | Prettier write |
-| `cd frontend && pnpm db:migrate:dev --name <slug>` | Create + apply a new Prisma migration |
-| `cd frontend && pnpm db:migrate:deploy` | Apply pending Prisma migrations (production-safe) |
-| `cd frontend && pnpm db:seed` | Idempotent upsert seed data (Prisma-backed; stays until Group D cutover) |
-| `cd frontend && pnpm db:studio` | Prisma Studio (browse the DB in the browser) |
 
 ### Backend (Python — available once Group B lands)
 
@@ -163,7 +160,7 @@ Runs the production image instead of `pnpm dev`. Same image App Service runs in 
 
 ## Architecture in one paragraph
 
-The portal is a Next.js (App Router) application running on Azure App Service for Linux as a single container image (pulled from HMCTS ACR). Microsoft Entra ID authenticates users at the platform edge via Easy Auth; the app reads the `X-MS-CLIENT-PRINCIPAL` header rather than running an OIDC client. Entities (Jurisdictions, Domains, Teams, Products, Initiatives) live in Azure Database for PostgreSQL Flexible Server, accessed through Prisma with `@prisma/adapter-pg`. The append-only audit log in the same database stores every markdown upload, its AI parse output, and approval metadata. Azure OpenAI handles markdown parsing (Phase 2) and search answer-card synthesis (Phase 3); Postgres FTS handles the ranked-results side of search. Secrets live in Azure Key Vault, accessed via App Service user-assigned managed identity — no keys in code or env. Azure Front Door sits in front of App Service for CDN + WAF; Application Insights handles observability.
+The portal is a two-image monorepo served behind Caddy. The **frontend** is a Next.js (App Router) standalone image that renders pages server-side; the **backend** is a FastAPI (Python 3.12+) image that owns all database access and exposes a REST API at `/api/*`. Caddy proxies `/api/*` to the backend and everything else to Next.js. Microsoft Entra ID authenticates users at the platform edge via Easy Auth; the app reads the `X-MS-CLIENT-PRINCIPAL` header rather than running an OIDC client. Entities (Jurisdictions, Domains, Teams, Products, Initiatives) live in Azure Database for PostgreSQL Flexible Server, accessed by the backend through SQLModel (Pydantic + SQLAlchemy 2.0) with Alembic for migrations. Azure OpenAI handles markdown parsing and search answer-card synthesis; Postgres FTS handles the ranked-results side of search. Secrets live in Azure Key Vault, accessed via App Service user-assigned managed identity — no keys in code or env. Azure Front Door sits in front of App Service for CDN + WAF; Application Insights handles observability.
 
 The Terraform that provisions all of this lives in a sibling repo, `hmcts/dts-portfolio-portal-infra`. Deploys are triggered by CI in this repo emitting a `deploy-<env>-<version>-<runid>` tag, with a cross-repo dispatch firing into the infra repo's `deploy-<env>.yml` workflow once the `INFRA_DISPATCH_ENABLED` repo variable is flipped on.
 
