@@ -11,7 +11,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["src/**/*.int.test.ts"],
+    include: ["**/*.int.test.ts"],
     pool: "forks",
     // Integration tests share a Postgres connection and clean state
     // via TRUNCATE in beforeEach. Run serially so we don't race
@@ -22,7 +22,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "."),
     },
   },
 });
