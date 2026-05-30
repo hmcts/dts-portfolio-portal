@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: frontend
+
 jobs:
   sbom:
     name: CycloneDX SBOM (Node / pnpm)
@@ -29,6 +33,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install (frozen, no scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -53,5 +58,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: sbom
-          path: sbom.cdx.json
+          path: frontend/sbom.cdx.json
           retention-days: 90

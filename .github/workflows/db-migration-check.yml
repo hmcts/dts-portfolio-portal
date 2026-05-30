@@ -8,9 +8,14 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "prisma/**"
-      - "src/lib/entities.ts"
+      - 'frontend/prisma/**'
+      - 'frontend/lib/entities.ts'
+      - '.github/workflows/db-migration-check.yml'
   workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: frontend
 
 permissions:
   contents: read
@@ -48,6 +53,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install
         run: pnpm install --frozen-lockfile
