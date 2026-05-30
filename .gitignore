@@ -98,6 +98,23 @@ docs/prototype/rendered.html
 docs/prototype/rendered.png
 docs/prototype/computed-tokens.json
 
+# --- Python (backend/)
+# Scoped to backend/ so these patterns are unambiguous in the monorepo.
+# The generic __pycache__ / .venv patterns above still catch anything outside
+# backend/ if a one-off script ever lives at the root.
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.mypy_cache/
+backend/.venv/
+backend/htmlcov/
+backend/.coverage
+backend/coverage.xml
+
+# --- Generated TypeScript client (do not commit; regenerated each CI run)
+frontend/lib/api/generated/
+
 # --- Local scratch ---
 tmp/
 temp/
