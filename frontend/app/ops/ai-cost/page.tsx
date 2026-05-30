@@ -3,11 +3,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import {
-  getBudgetStatus,
-  getDailyParseMetrics,
-} from "@/lib/ai-parser/metrics";
+import { getServerApiClient } from "@/lib/api-client-server";
 import { buildDayRows, summarise } from "./aggregations";
+import type { DailyParseMetric } from "@/lib/ai-parser/metrics";
 
 // AI cost dashboard per Phase 2 task 2.13. Renders the last 14
 // days of AI parse activity broken down by source (Azure OpenAI vs
@@ -26,11 +24,57 @@ export const metadata: Metadata = {
 
 const DAYS_BACK = 14;
 
+// --- API response shapes (snake_case from the Python backend) ---
+
+interface ApiDailyParseMetric {
+  day: string;
+  source: string;
+  parse_count: number;
+  success_count: number;
+  failure_count: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  avg_latency_ms: number;
+}
+
+interface ApiAiParseMetricsSummary {
+  today_tokens: number;
+  budget_tokens_per_day: number | null;
+  exceeded: boolean;
+  total_parses: number;
+  total_successes: number;
+  total_failures: number;
+  total_tokens: number;
+  daily_metrics: ApiDailyParseMetric[];
+}
+
 export default async function AiCostPage() {
-  const [rows, budget] = await Promise.all([
-    getDailyParseMetrics(DAYS_BACK),
-    getBudgetStatus(),
-  ]);
+  const api = await getServerApiClient();
+  const summary = await api.get<ApiAiParseMetricsSummary>(
+    "/api/ops/ai-parse-metrics",
+  );
+
+  // Map the snake_case API response to the camelCase shapes the
+  // aggregation helpers expect (they were written against the Prisma
+  // DailyParseMetric type).
+  const rows: DailyParseMetric[] = summary.daily_metrics.map((m) => ({
+    day: m.day,
+    source: m.source,
+    parseCount: m.parse_count,
+    successCount: m.success_count,
+    failureCount: m.failure_count,
+    promptTokens: m.prompt_tokens,
+    completionTokens: m.completion_tokens,
+    totalTokens: m.total_tokens,
+    avgLatencyMs: m.avg_latency_ms,
+  }));
+
+  const budget = {
+    budgetTokensPerDay: summary.budget_tokens_per_day,
+    todayTokens: summary.today_tokens,
+    exceeded: summary.exceeded,
+  };
 
   const days = buildDayRows(rows);
   const totals = summarise(rows);

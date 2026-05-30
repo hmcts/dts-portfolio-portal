@@ -3,11 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import {
-  getDailySearchVolume,
-  getUnclickedQueries,
-  getZeroResultQueries,
-} from "@/lib/search/analytics";
+import { getServerApiClient } from "@/lib/api-client-server";
 import { computeCtr, formatCtr, summariseVolume } from "./aggregations";
 
 // Search relevance dashboard per Phase 3 task 3.7. Three sections:
@@ -25,15 +21,59 @@ export const metadata: Metadata = {
 
 const DAYS_BACK = 14;
 
-export default async function SearchAnalyticsPage() {
-  const [volume, zero, unclicked] = await Promise.all([
-    getDailySearchVolume(DAYS_BACK),
-    getZeroResultQueries(DAYS_BACK),
-    getUnclickedQueries(DAYS_BACK),
-  ]);
+// --- API response shapes (snake_case from the Python backend) ---
 
+interface ApiZeroResultQuery {
+  query: string;
+  occurrences: number;
+  last_seen_at: string;
+}
+
+interface ApiUnclickedQuery {
+  query: string;
+  occurrences: number;
+  last_seen_at: string;
+  top_result_count: number;
+}
+
+interface ApiDailyVolume {
+  day: string;
+  queries: number;
+  clicks: number;
+}
+
+interface ApiSearchEventsSummary {
+  total_queries: number;
+  total_clicks: number;
+  zero_result_queries: ApiZeroResultQuery[];
+  unclicked_queries: ApiUnclickedQuery[];
+  daily_volume: ApiDailyVolume[];
+}
+
+export default async function SearchAnalyticsPage() {
+  const api = await getServerApiClient();
+  const summary = await api.get<ApiSearchEventsSummary>("/api/ops/search-events");
+
+  const volume = summary.daily_volume.map((d) => ({
+    day: d.day,
+    queries: d.queries,
+    clicks: d.clicks,
+  }));
   const totals = summariseVolume(volume);
   const ctr = computeCtr(totals);
+
+  const zero = summary.zero_result_queries.map((q) => ({
+    query: q.query,
+    occurrences: q.occurrences,
+    lastSeenAt: new Date(q.last_seen_at),
+  }));
+
+  const unclicked = summary.unclicked_queries.map((q) => ({
+    query: q.query,
+    occurrences: q.occurrences,
+    lastSeenAt: new Date(q.last_seen_at),
+    topResultCount: q.top_result_count,
+  }));
 
   return (
     <div className="mx-auto max-w-[1480px]">
