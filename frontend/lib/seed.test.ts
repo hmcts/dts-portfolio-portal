@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { portalContent } from "./seed";
-import { PortalContent } from "./entities";
-// Seed test — exercises the SYNC seed-only helpers, not the
-// DB-backed wrappers in portal-data.ts. The wrapper layer is
-// covered separately by an integration test in portal-data.int.test.ts.
-import { getMatrix, getJurisdictionCounts } from "./portal-data-seed";
+import { PortalContent } from "./types";
 
 describe("portalContent seed", () => {
   it("parses cleanly against the PortalContent schema", () => {
@@ -68,35 +64,3 @@ describe("portalContent seed", () => {
   });
 });
 
-describe("getMatrix", () => {
-  it("returns a band per Jurisdiction", () => {
-    const matrix = getMatrix();
-    expect(matrix.length).toBe(portalContent.jurisdictions.length);
-  });
-
-  it("groups Initiative chips by Domain × TimeBucket", () => {
-    const matrix = getMatrix();
-    const crime = matrix.find((b) => b.jurisdiction.slug === "crime");
-    expect(crime).toBeDefined();
-    expect(crime!.rows.length).toBeGreaterThan(0);
-    const totalInitiatives = crime!.rows.reduce(
-      (sum, r) =>
-        sum + r.cells.NOW.length + r.cells.NEXT.length + r.cells.LATER.length,
-      0,
-    );
-    expect(totalInitiatives).toBe(crime!.initiativeCount);
-  });
-});
-
-describe("getJurisdictionCounts", () => {
-  it("returns one entry per Jurisdiction", () => {
-    const counts = getJurisdictionCounts();
-    expect(Object.keys(counts).sort()).toEqual([
-      "administrative",
-      "civil",
-      "crime",
-      "family",
-      "tribunals",
-    ]);
-  });
-});

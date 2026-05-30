@@ -6,7 +6,7 @@ import { ChevronRight, ArrowRight } from "lucide-react";
 import { InitiativeChip } from "@/components/initiative-chip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
-import type { MatrixJurisdictionBand } from "@/lib/portal-data";
+import type { MatrixJurisdictionBand } from "@/lib/types";
 
 // Cross-DTS roadmap matrix per requirements spec §5.2. Rows: Product
 // Domains grouped under their Jurisdiction. Columns: NOW / NEXT /

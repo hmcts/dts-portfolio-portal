@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { Sidebar } from "./sidebar";
-import type { SidebarJurisdiction } from "@/lib/portal-data";
+import type { SidebarJurisdiction } from "@/lib/types";
 
 // Component tests for the Sidebar. Pins the rendering contract
 // that PR #41 fixed: every Jurisdiction's expand chevron reveals

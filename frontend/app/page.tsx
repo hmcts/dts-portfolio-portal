@@ -6,8 +6,7 @@ import { Section } from "@/components/ui/section";
 import { RoadmapMatrix } from "@/components/roadmap-matrix";
 import { ActivityFeed } from "@/components/activity-feed";
 import { getServerApiClient } from "@/lib/api-client-server";
-import type { ActivityEntry } from "@/lib/entities";
-import type { MatrixJurisdictionBand } from "@/lib/portal-data";
+import type { ActivityEntry, MatrixJurisdictionBand } from "@/lib/types";
 
 // Home page per requirements spec §5.2. Cross-DTS roadmap matrix
 // grouped by Jurisdiction, with the first Jurisdiction's band
