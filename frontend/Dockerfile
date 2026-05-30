@@ -11,20 +11,10 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 
-# DATABASE_URL must be present for `prisma generate` (schema validation).
-# No real connection is made here; the placeholder is sufficient.
-ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
-
-# Install without running postinstall (which calls `prisma generate` and a
-# script outside the build context). We run prisma generate explicitly below.
+# Install without running postinstall (which calls scripts outside the build
+# context). We run the postinstall step explicitly below.
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm-store \
     pnpm install --frozen-lockfile --ignore-scripts --store-dir=/pnpm-store
-
-# Copy the Prisma schema so `prisma generate` can read it.
-COPY prisma.config.ts ./
-COPY prisma/ ./prisma/
-
-RUN pnpm exec prisma generate
 
 # Stub next-env.d.ts so TypeScript is happy during the build stage.
 # (Normally written by scripts/write-next-env.mjs from postinstall; that
@@ -39,18 +29,9 @@ COPY . .
 
 ARG VERSION=dev
 ARG PORTAL_BACKEND_URL=http://backend:8000
-# Several pages (e.g. /ops/search) run DB queries during `next build` for
-# static prerendering. Pass a real DATABASE_URL at build time so those pages
-# render successfully. For local builds use --network host with the compose
-# DB:
-#   docker build --network host \
-#     --build-arg BUILD_DATABASE_URL=postgresql://portal:portal@localhost:5432/portal .
-# In CI, pass BUILD_DATABASE_URL pointing to the CI service container DB.
-ARG BUILD_DATABASE_URL=postgresql://portal:portal@localhost:5432/portal
 ENV NEXT_PUBLIC_PORTAL_BACKEND_URL=$PORTAL_BACKEND_URL \
     NEXT_TELEMETRY_DISABLED=1 \
-    APP_VERSION=$VERSION \
-    DATABASE_URL=$BUILD_DATABASE_URL
+    APP_VERSION=$VERSION
 
 RUN --mount=type=cache,id=next-cache,target=/app/.next/cache \
     pnpm run build
