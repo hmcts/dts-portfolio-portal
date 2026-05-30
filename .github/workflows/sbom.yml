@@ -11,12 +11,12 @@ on:
     - cron: '48 6 * * 4' # Thursday 06:48 UTC
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 defaults:
   run:
     working-directory: frontend
+
+permissions:
+  contents: read
 
 jobs:
   sbom:
