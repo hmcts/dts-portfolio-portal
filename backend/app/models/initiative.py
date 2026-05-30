@@ -1,35 +1,47 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Computed, DateTime, Enum, Integer, String, text
+from sqlalchemy import Column, DateTime, Enum, ForeignKeyConstraint, Index, Integer, Text, text
+from sqlalchemy import Computed as SAComputed
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlmodel import Field, SQLModel
 
-# TimeBucket enum values as defined in the Postgres schema.
-# create_type=False because the type already exists via the baseline migration.
+# TimeBucket enum values. create_type=False: the type already exists via
+# the baseline migration.
 _TIME_BUCKET_ENUM = Enum(
     "NOW",
     "NEXT",
     "LATER",
     name="TimeBucket",
-    schema="public",
     create_type=False,
 )
 
 
 class Initiative(SQLModel, table=True):
     __tablename__ = "Initiative"  # type: ignore[assignment]
-
-    id: str = Field(primary_key=True)
-    product_id: str = Field(
-        sa_column=Column("productId", String, nullable=False)
+    __table_args__ = (
+        Index("Initiative_productId_bucket_idx", "productId", "bucket"),
+        Index("Initiative_searchTsv_idx", "searchTsv", postgresql_using="gin"),
+        ForeignKeyConstraint(
+            ["productId"],
+            ["Product.id"],
+            name="Initiative_productId_fkey",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
     )
+
+    id: str = Field(sa_column=Column("id", Text, primary_key=True, nullable=False))
+    product_id: str = Field(sa_column=Column("productId", Text, nullable=False))
     bucket: str = Field(
         sa_column=Column("bucket", _TIME_BUCKET_ENUM, nullable=False)
     )
-    title: str
-    description: str | None = None
+    title: str = Field(sa_column=Column("title", Text, nullable=False))
+    description: str | None = Field(
+        default=None, sa_column=Column("description", Text, nullable=True)
+    )
     outbound_url: str | None = Field(
         default=None,
-        sa_column=Column("outboundUrl", String, nullable=True),
+        sa_column=Column("outboundUrl", Text, nullable=True),
     )
     position: int = Field(
         sa_column=Column("position", Integer, nullable=False, server_default=text("0"))
@@ -49,10 +61,11 @@ class Initiative(SQLModel, table=True):
         default=None,
         sa_column=Column(
             "searchTsv",
-            String,
-            Computed(
-                "setweight(to_tsvector('english'::regconfig, COALESCE(title, '')), 'A') "
-                "|| setweight(to_tsvector('english'::regconfig, COALESCE(description, '')), 'C')",
+            TSVECTOR,
+            SAComputed(
+                "(setweight(to_tsvector('english'::regconfig, COALESCE(title, ''::text)), "
+                "'A'::\"char\") || setweight(to_tsvector('english'::regconfig, "
+                "COALESCE(description, ''::text)), 'C'::\"char\"))",
                 persisted=True,
             ),
             nullable=True,

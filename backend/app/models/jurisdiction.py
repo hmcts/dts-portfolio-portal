@@ -1,16 +1,24 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Computed, DateTime, String, text
+from sqlalchemy import Column, DateTime, Index, Text, text
+from sqlalchemy import Computed as SAComputed
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlmodel import Field, SQLModel
 
 
 class Jurisdiction(SQLModel, table=True):
     __tablename__ = "Jurisdiction"  # type: ignore[assignment]
+    __table_args__ = (
+        Index("Jurisdiction_slug_key", "slug", unique=True),
+        Index("Jurisdiction_searchTsv_idx", "searchTsv", postgresql_using="gin"),
+    )
 
-    id: str = Field(primary_key=True)
-    slug: str = Field(sa_column=Column("slug", String, nullable=False, unique=True))
-    name: str
-    description: str | None = None
+    id: str = Field(sa_column=Column("id", Text, primary_key=True, nullable=False))
+    slug: str = Field(sa_column=Column("slug", Text, nullable=False))
+    name: str = Field(sa_column=Column("name", Text, nullable=False))
+    description: str | None = Field(
+        default=None, sa_column=Column("description", Text, nullable=True)
+    )
     created_at: datetime = Field(
         sa_column=Column(
             "createdAt",
@@ -26,10 +34,11 @@ class Jurisdiction(SQLModel, table=True):
         default=None,
         sa_column=Column(
             "searchTsv",
-            String,
-            Computed(
-                "setweight(to_tsvector('english'::regconfig, COALESCE(name, '')), 'A') "
-                "|| setweight(to_tsvector('english'::regconfig, COALESCE(description, '')), 'C')",
+            TSVECTOR,
+            SAComputed(
+                "(setweight(to_tsvector('english'::regconfig, COALESCE(name, ''::text)), "
+                "'A'::\"char\") || setweight(to_tsvector('english'::regconfig, "
+                "COALESCE(description, ''::text)), 'C'::\"char\"))",
                 persisted=True,
             ),
             nullable=True,

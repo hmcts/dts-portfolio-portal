@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, text
+from sqlalchemy import Column, DateTime, Index, Integer, Text, text
 from sqlmodel import Field, SQLModel
 
 
@@ -10,8 +10,13 @@ class SearchEvent(SQLModel, table=True):
     dashboard at /ops/search."""
 
     __tablename__ = "SearchEvent"  # type: ignore[assignment]
+    __table_args__ = (
+        Index("SearchEvent_createdAt_idx", "createdAt"),
+        Index("SearchEvent_kind_createdAt_idx", "kind", "createdAt"),
+        Index("SearchEvent_query_idx", "query"),
+    )
 
-    id: str = Field(primary_key=True)
+    id: str = Field(sa_column=Column("id", Text, primary_key=True, nullable=False))
     created_at: datetime = Field(
         sa_column=Column(
             "createdAt",
@@ -20,19 +25,19 @@ class SearchEvent(SQLModel, table=True):
             server_default=text("CURRENT_TIMESTAMP"),
         )
     )
-    kind: str
-    query: str
+    kind: str = Field(sa_column=Column("kind", Text, nullable=False))
+    query: str = Field(sa_column=Column("query", Text, nullable=False))
     result_count: int | None = Field(
         default=None,
         sa_column=Column("resultCount", Integer, nullable=True),
     )
     clicked_entity_type: str | None = Field(
         default=None,
-        sa_column=Column("clickedEntityType", String, nullable=True),
+        sa_column=Column("clickedEntityType", Text, nullable=True),
     )
     clicked_entity_id: str | None = Field(
         default=None,
-        sa_column=Column("clickedEntityId", String, nullable=True),
+        sa_column=Column("clickedEntityId", Text, nullable=True),
     )
     clicked_position: int | None = Field(
         default=None,
@@ -40,5 +45,5 @@ class SearchEvent(SQLModel, table=True):
     )
     subject_hash: str | None = Field(
         default=None,
-        sa_column=Column("subjectHash", String, nullable=True),
+        sa_column=Column("subjectHash", Text, nullable=True),
     )

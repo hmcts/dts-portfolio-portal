@@ -1,20 +1,36 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Computed, DateTime, String, text
+from sqlalchemy import Column, DateTime, ForeignKeyConstraint, Index, Text, text
+from sqlalchemy import Computed as SAComputed
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlmodel import Field, SQLModel
 
 
 class Team(SQLModel, table=True):
     __tablename__ = "Team"  # type: ignore[assignment]
-
-    id: str = Field(primary_key=True)
-    slug: str = Field(sa_column=Column("slug", String, nullable=False, unique=True))
-    name: str
-    description: str | None = None
-    contact: str | None = None
-    domain_id: str = Field(
-        sa_column=Column("domainId", String, nullable=False, index=True)
+    __table_args__ = (
+        Index("Team_slug_key", "slug", unique=True),
+        Index("Team_domainId_idx", "domainId"),
+        Index("Team_searchTsv_idx", "searchTsv", postgresql_using="gin"),
+        ForeignKeyConstraint(
+            ["domainId"],
+            ["ProductDomain.id"],
+            name="Team_domainId_fkey",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
     )
+
+    id: str = Field(sa_column=Column("id", Text, primary_key=True, nullable=False))
+    slug: str = Field(sa_column=Column("slug", Text, nullable=False))
+    name: str = Field(sa_column=Column("name", Text, nullable=False))
+    description: str | None = Field(
+        default=None, sa_column=Column("description", Text, nullable=True)
+    )
+    contact: str | None = Field(
+        default=None, sa_column=Column("contact", Text, nullable=True)
+    )
+    domain_id: str = Field(sa_column=Column("domainId", Text, nullable=False))
     created_at: datetime = Field(
         sa_column=Column(
             "createdAt",
@@ -30,11 +46,13 @@ class Team(SQLModel, table=True):
         default=None,
         sa_column=Column(
             "searchTsv",
-            String,
-            Computed(
-                "setweight(to_tsvector('english'::regconfig, COALESCE(name, '')), 'A') "
-                "|| setweight(to_tsvector('english'::regconfig, COALESCE(description, '')), 'B') "
-                "|| setweight(to_tsvector('english'::regconfig, COALESCE(contact, '')), 'D')",
+            TSVECTOR,
+            SAComputed(
+                "((setweight(to_tsvector('english'::regconfig, COALESCE(name, ''::text)), "
+                "'A'::\"char\") || setweight(to_tsvector('english'::regconfig, "
+                "COALESCE(description, ''::text)), 'B'::\"char\")) || "
+                "setweight(to_tsvector('english'::regconfig, COALESCE(contact, ''::text)), "
+                "'D'::\"char\"))",
                 persisted=True,
             ),
             nullable=True,

@@ -1,18 +1,34 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Computed, DateTime, Integer, String, text
+from sqlalchemy import Column, DateTime, ForeignKeyConstraint, Index, Integer, Text, text
+from sqlalchemy import Computed as SAComputed
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlmodel import Field, SQLModel
 
 
 class ProductDomain(SQLModel, table=True):
     __tablename__ = "ProductDomain"  # type: ignore[assignment]
+    __table_args__ = (
+        Index("ProductDomain_slug_key", "slug", unique=True),
+        Index("ProductDomain_jurisdictionId_idx", "jurisdictionId"),
+        Index("ProductDomain_searchTsv_idx", "searchTsv", postgresql_using="gin"),
+        ForeignKeyConstraint(
+            ["jurisdictionId"],
+            ["Jurisdiction.id"],
+            name="ProductDomain_jurisdictionId_fkey",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
+    )
 
-    id: str = Field(primary_key=True)
-    slug: str = Field(sa_column=Column("slug", String, nullable=False, unique=True))
-    name: str
-    description: str | None = None
+    id: str = Field(sa_column=Column("id", Text, primary_key=True, nullable=False))
+    slug: str = Field(sa_column=Column("slug", Text, nullable=False))
+    name: str = Field(sa_column=Column("name", Text, nullable=False))
+    description: str | None = Field(
+        default=None, sa_column=Column("description", Text, nullable=True)
+    )
     jurisdiction_id: str = Field(
-        sa_column=Column("jurisdictionId", String, nullable=False, index=True)
+        sa_column=Column("jurisdictionId", Text, nullable=False)
     )
     created_at: datetime = Field(
         sa_column=Column(
@@ -29,10 +45,11 @@ class ProductDomain(SQLModel, table=True):
         default=None,
         sa_column=Column(
             "searchTsv",
-            String,
-            Computed(
-                "setweight(to_tsvector('english'::regconfig, COALESCE(name, '')), 'A') "
-                "|| setweight(to_tsvector('english'::regconfig, COALESCE(description, '')), 'C')",
+            TSVECTOR,
+            SAComputed(
+                "(setweight(to_tsvector('english'::regconfig, COALESCE(name, ''::text)), "
+                "'A'::\"char\") || setweight(to_tsvector('english'::regconfig, "
+                "COALESCE(description, ''::text)), 'C'::\"char\"))",
                 persisted=True,
             ),
             nullable=True,
@@ -44,13 +61,23 @@ class StrategicTheme(SQLModel, table=True):
     """Corresponds to the 'Theme' table created by the Prisma schema."""
 
     __tablename__ = "Theme"  # type: ignore[assignment]
-
-    id: str = Field(primary_key=True)
-    title: str
-    description: str | None = None
-    domain_id: str = Field(
-        sa_column=Column("domainId", String, nullable=False, index=True)
+    __table_args__ = (
+        Index("Theme_domainId_idx", "domainId"),
+        ForeignKeyConstraint(
+            ["domainId"],
+            ["ProductDomain.id"],
+            name="Theme_domainId_fkey",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
     )
+
+    id: str = Field(sa_column=Column("id", Text, primary_key=True, nullable=False))
+    title: str = Field(sa_column=Column("title", Text, nullable=False))
+    description: str | None = Field(
+        default=None, sa_column=Column("description", Text, nullable=True)
+    )
+    domain_id: str = Field(sa_column=Column("domainId", Text, nullable=False))
     position: int = Field(
         sa_column=Column("position", Integer, nullable=False, server_default=text("0"))
     )

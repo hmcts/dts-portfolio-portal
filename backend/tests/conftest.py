@@ -24,11 +24,10 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(TEST_DATABASE_URL, echo=False, pool_pre_ping=True)
     session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    async with engine.connect() as connection:
-        async with connection.begin() as transaction:
-            async with session_maker(bind=connection) as session:
-                yield session
-            await transaction.rollback()
+    async with engine.connect() as connection, connection.begin() as transaction:
+        async with session_maker(bind=connection) as session:
+            yield session
+        await transaction.rollback()
     await engine.dispose()
 
 

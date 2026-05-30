@@ -1,5 +1,6 @@
 import asyncio
 from logging.config import fileConfig
+from typing import Any
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -22,6 +23,28 @@ if config.config_file_name is not None:
 
 target_metadata = SQLModel.metadata
 
+# Tables that exist in the database but are not managed by SQLModel /
+# Alembic.  They were either created by Prisma (_prisma_migrations,
+# _ConsumedByJurisdiction) or belong to write-path group plans that have
+# not yet landed (Submission).  Autogenerate must skip them.
+_UNMANAGED_TABLES = frozenset(
+    {
+        "_prisma_migrations",
+        "_ConsumedByJurisdiction",
+        "Submission",
+    }
+)
+
+
+def include_object(obj: Any, name: str | None, type_: str, *args: Any) -> bool:  # noqa: ANN401
+    """Tell autogenerate which DB objects to compare.
+
+    Return False for tables and their associated indexes/constraints that
+    belong to ``_UNMANAGED_TABLES`` so autogenerate never proposes to
+    create or drop them.
+    """
+    return not (type_ == "table" and name in _UNMANAGED_TABLES)
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -41,6 +64,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -48,7 +72,11 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
