@@ -4,7 +4,6 @@ Uses a minimal ad-hoc FastAPI app rather than the main application, so
 these tests have no database dependency and run in isolation.
 """
 
-import pytest
 from fastapi import Depends, FastAPI
 from httpx import ASGITransport, AsyncClient
 

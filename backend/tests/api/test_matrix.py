@@ -9,7 +9,9 @@ from app.models.product_domain import ProductDomain
 from app.models.team import Team
 
 
-async def _seed(fresh_session, jurisdiction_id: str, jurisdiction_slug: str, jurisdiction_name: str) -> None:
+async def _seed(
+    fresh_session, jurisdiction_id: str, jurisdiction_slug: str, jurisdiction_name: str
+) -> None:
     """Seed a minimal jurisdiction → domain → product → initiative chain."""
     async with fresh_session() as s:
         team = Team(

@@ -81,4 +81,3 @@ async def reset_api_db():
             )
         )
         await session.commit()
-    yield

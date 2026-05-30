@@ -3,7 +3,10 @@ line-length = 100
 
 [lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "A", "C4", "T20", "PT", "SIM"]
-ignore = ["S101"]  # pytest's `assert` is fine in tests
+ignore = [
+    "S101",  # pytest's `assert` is fine in tests
+    "B008",  # FastAPI's Depends() in default args is the canonical pattern
+]
 
 [lint.per-file-ignores]
 "tests/**/*.py" = ["S105", "S106"]  # hardcoded test fixtures
