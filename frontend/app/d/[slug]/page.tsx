@@ -8,14 +8,16 @@ import { Section } from "@/components/ui/section";
 import { StatusPill } from "@/components/ui/status-pill";
 import { ProductCardModal } from "@/components/product-card-modal";
 import { TeamCardModal } from "@/components/team-card-modal";
-import {
-  getDomainBySlug,
-  getInitiativesForProduct,
-  getJurisdictionBySlug,
-  getProductsForDomain,
-  getTeamsForDomain,
-} from "@/lib/portal-data";
-import type { ProductStage } from "@/lib/entities";
+import { getServerApiClient } from "@/lib/api-client-server";
+import { ApiError } from "@/lib/api-client";
+import type {
+  Initiative,
+  Jurisdiction,
+  Product,
+  ProductDomain,
+  ProductStage,
+  Team,
+} from "@/lib/entities";
 
 // Product Domain page per requirements spec §5.4. Header + strategic
 // themes + Teams card grid + Products card grid. Filter strip is a
@@ -30,30 +32,162 @@ const STAGE_TONE: Record<ProductStage, "blue" | "amber" | "purple" | "green" | "
   retired: "grey",
 };
 
+// --- API response shapes (snake_case from the Python backend) ---
+
+interface ApiDomain {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  jurisdiction_id: string;
+}
+
+interface ApiJurisdictionSlim {
+  slug: string;
+  name: string;
+  count: number;
+  domains: { slug: string; name: string }[];
+}
+
+interface ApiTeam {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  contact?: string | null;
+  domain_id: string;
+}
+
+interface ApiProduct {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  stage: ProductStage;
+  domain_id: string;
+  operating_team_id: string;
+}
+
+interface ApiInitiative {
+  id: string;
+  product_id: string;
+  bucket: "NOW" | "NEXT" | "LATER";
+  title: string;
+  description?: string | null;
+  outbound_url?: string | null;
+}
+
+// --- Mappers ---
+
+function mapDomain(d: ApiDomain, jurisdictionSlug: string): ProductDomain {
+  return {
+    id: d.id,
+    slug: d.slug,
+    name: d.name,
+    ...(d.description ? { description: d.description } : {}),
+    // Strategic themes are not returned by the backend domain endpoint;
+    // they will be included once the backend extends its response model.
+    strategicThemes: [],
+    jurisdictionSlug: jurisdictionSlug as ProductDomain["jurisdictionSlug"],
+  };
+}
+
+function mapTeam(t: ApiTeam, domainSlug: string): Team {
+  const team: Team = {
+    id: t.id,
+    slug: t.slug,
+    name: t.name,
+    domainSlug,
+  };
+  if (t.description) team.description = t.description;
+  if (t.contact) team.contact = t.contact;
+  return team;
+}
+
+function mapProduct(
+  p: ApiProduct,
+  domainSlug: string,
+  teamSlugById: Map<string, string>,
+): Product {
+  const out: Product = {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    stage: p.stage,
+    domainSlug,
+    operatingTeamSlug: teamSlugById.get(p.operating_team_id) ?? "",
+    consumedBy: [],
+    outboundLinks: [],
+  };
+  if (p.description) out.description = p.description;
+  return out;
+}
+
+function mapInitiative(i: ApiInitiative): Initiative {
+  const initiative: Initiative = {
+    id: i.id,
+    productId: i.product_id,
+    bucket: i.bucket,
+    title: i.title,
+  };
+  if (i.description) initiative.description = i.description;
+  if (i.outbound_url) initiative.outboundUrl = i.outbound_url;
+  return initiative;
+}
+
 export default async function DomainPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const domain = await getDomainBySlug(slug);
-  if (!domain) {
-    notFound();
+  const api = await getServerApiClient();
+
+  let apiDomain: ApiDomain;
+  try {
+    apiDomain = await api.get<ApiDomain>(`/api/domains/${slug}`);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) notFound();
+    throw err;
   }
-  const [jurisdiction, teams, products] = await Promise.all([
-    getJurisdictionBySlug(domain.jurisdictionSlug),
-    getTeamsForDomain(domain.slug),
-    getProductsForDomain(domain.slug),
+
+  // Resolve the jurisdiction slug: get all jurisdictions from the sidebar,
+  // find the one whose domains list contains our slug.
+  const [sidebarJurisdictions, teams, products] = await Promise.all([
+    api.get<ApiJurisdictionSlim[]>("/api/sidebar/jurisdictions"),
+    api.get<ApiTeam[]>(`/api/domains/${slug}/teams`),
+    api.get<ApiProduct[]>(`/api/domains/${slug}/products`),
   ]);
-  // Pre-fetch initiatives per Product so the JSX iteration stays
-  // synchronous. Each is a Prisma query; running in parallel keeps
-  // page render under the 500ms perceived budget.
-  const initiativesByProductId = new Map(
+
+  const jurisdictionSlim = sidebarJurisdictions.find((j) =>
+    j.domains.some((d) => d.slug === slug),
+  );
+  const jurisdictionSlug = (jurisdictionSlim?.slug ??
+    "") as ProductDomain["jurisdictionSlug"];
+
+  const jurisdiction: Jurisdiction | undefined = jurisdictionSlim
+    ? {
+        slug: jurisdictionSlug,
+        name: jurisdictionSlim.name,
+      }
+    : undefined;
+
+  const domain = mapDomain(apiDomain, jurisdictionSlug);
+  const teamSlugById = new Map(teams.map((t) => [t.id, t.slug]));
+  const mappedTeams = teams.map((t) => mapTeam(t, slug));
+  const mappedProducts = products.map((p) =>
+    mapProduct(p, slug, teamSlugById),
+  );
+
+  // Fetch initiatives per product in parallel, keyed by product id.
+  const initiativesByProductId = new Map<string, Initiative[]>(
     await Promise.all(
-      products.map(
-        async (p) =>
-          [p.id, await getInitiativesForProduct(p.id)] as const,
-      ),
+      products.map(async (p) => {
+        const raw = await api.get<ApiInitiative[]>(
+          `/api/products/${p.slug}/initiatives`,
+        );
+        return [p.id, raw.map(mapInitiative)] as const;
+      }),
     ),
   );
 
@@ -97,11 +231,13 @@ export default async function DomainPage({
 
       <Section
         eyebrow="Teams"
-        heading={`${teams.length} ${teams.length === 1 ? "Team" : "Teams"} in ${domain.name}`}
+        heading={`${mappedTeams.length} ${mappedTeams.length === 1 ? "Team" : "Teams"} in ${domain.name}`}
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {teams.map((t) => {
-            const productsForT = products.filter((p) => p.operatingTeamSlug === t.slug);
+          {mappedTeams.map((t) => {
+            const productsForT = mappedProducts.filter(
+              (p) => p.operatingTeamSlug === t.slug,
+            );
             return (
               <TeamCardModal
                 key={t.slug}
@@ -125,7 +261,9 @@ export default async function DomainPage({
                         </p>
                       ) : null}
                       <div className="mt-3 text-[12px] text-[var(--color-muted)]">
-                        {productsForT.length} {productsForT.length === 1 ? "Product" : "Products"} operated
+                        {productsForT.length}{" "}
+                        {productsForT.length === 1 ? "Product" : "Products"}{" "}
+                        operated
                       </div>
                     </Card>
                   </button>
@@ -138,11 +276,11 @@ export default async function DomainPage({
 
       <Section
         eyebrow="Products"
-        heading={`${products.length} ${products.length === 1 ? "Product" : "Products"} in ${domain.name}`}
+        heading={`${mappedProducts.length} ${mappedProducts.length === 1 ? "Product" : "Products"} in ${domain.name}`}
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {products.map((p) => {
-            const team = teams.find((t) => t.slug === p.operatingTeamSlug);
+          {mappedProducts.map((p) => {
+            const team = mappedTeams.find((t) => t.slug === p.operatingTeamSlug);
             const initiatives = initiativesByProductId.get(p.id) ?? [];
             return (
               <ProductCardModal
@@ -168,7 +306,9 @@ export default async function DomainPage({
                         <StatusPill
                           tone={STAGE_TONE[p.stage]}
                           icon={<CheckCircle2 size={12} aria-hidden="true" />}
-                          label={p.stage[0].toUpperCase() + p.stage.slice(1)}
+                          label={
+                            p.stage[0].toUpperCase() + p.stage.slice(1)
+                          }
                         />
                       </div>
                       {p.description ? (
