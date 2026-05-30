@@ -1,0 +1,16 @@
+# Overlay for local development: bind-mounts the source dirs and runs the
+# dev-mode servers with hot-reload. Apply with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  backend:
+    command: >
+      uv run uvicorn app.main:app
+        --host 0.0.0.0 --port 8000
+        --reload
+        --reload-dir /app/app
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini
+    environment:
+      LOG_LEVEL: DEBUG
