@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.api import (
     activity,
+    answer_card,
     domains,
     health,
     jurisdictions,
@@ -32,3 +33,4 @@ app.include_router(teams.router)
 app.include_router(products.router)
 app.include_router(ops.router)
 app.include_router(search.router)
+app.include_router(answer_card.router)
