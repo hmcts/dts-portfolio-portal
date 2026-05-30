@@ -35,6 +35,14 @@ const BUCKET_LABELS: Record<TimeBucket, string> = {
 
 // --- API response shapes (snake_case from the Python backend) ---
 
+interface ApiOutboundLink {
+  id: string;
+  product_id: string;
+  label: string;
+  url: string;
+  position: number;
+}
+
 interface ApiProduct {
   id: string;
   slug: string;
@@ -43,6 +51,8 @@ interface ApiProduct {
   stage: ProductStage;
   domain_id: string;
   operating_team_id: string;
+  outbound_links: ApiOutboundLink[];
+  consumed_by: string[];   // Jurisdiction slugs
 }
 
 interface ApiInitiative {
@@ -131,11 +141,11 @@ export default async function ProductPage({
     LATER: initiatives.filter((i) => i.bucket === "LATER"),
   };
 
-  // consumedBy and outboundLinks are not returned by the current backend
-  // product endpoint (they require join-table resolution not yet exposed).
-  // Both sections gracefully render nothing when the arrays are empty.
-  const consumedBy: string[] = [];
-  const outboundLinks: { label: string; url: string }[] = [];
+  // consumedBy and outboundLinks are now returned by the backend ProductDetail response.
+  const consumedBy: string[] = product.consumed_by ?? [];
+  const outboundLinks: { label: string; url: string }[] = (product.outbound_links ?? []).map(
+    (l) => ({ label: l.label, url: l.url }),
+  );
 
   return (
     <div className="mx-auto max-w-[1480px]">

@@ -34,12 +34,21 @@ const STAGE_TONE: Record<ProductStage, "blue" | "amber" | "purple" | "green" | "
 
 // --- API response shapes (snake_case from the Python backend) ---
 
+interface ApiStrategicTheme {
+  id: string;
+  title: string;
+  description?: string | null;
+  domain_id: string;
+  position: number;
+}
+
 interface ApiDomain {
   id: string;
   slug: string;
   name: string;
   description?: string | null;
   jurisdiction_id: string;
+  strategic_themes: ApiStrategicTheme[];
 }
 
 interface ApiJurisdictionSlim {
@@ -85,9 +94,10 @@ function mapDomain(d: ApiDomain, jurisdictionSlug: string): ProductDomain {
     slug: d.slug,
     name: d.name,
     ...(d.description ? { description: d.description } : {}),
-    // Strategic themes are not returned by the backend domain endpoint;
-    // they will be included once the backend extends its response model.
-    strategicThemes: [],
+    strategicThemes: (d.strategic_themes ?? []).map((t) => ({
+      title: t.title,
+      ...(t.description ? { description: t.description } : {}),
+    })),
     jurisdictionSlug: jurisdictionSlug as ProductDomain["jurisdictionSlug"],
   };
 }

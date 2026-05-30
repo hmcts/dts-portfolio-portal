@@ -3,10 +3,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.response_models import DomainDetail
 from app.db import get_db
 from app.models.initiative import Initiative
 from app.models.product import Product
-from app.models.product_domain import ProductDomain
 from app.models.team import Team
 from app.repositories.domains import (
     get_domain_by_slug,
@@ -18,13 +18,20 @@ from app.repositories.domains import (
 router = APIRouter(prefix="/api/domains", tags=["domains"])
 
 
-@router.get("/{slug}", response_model=ProductDomain)
-async def by_slug(slug: str, session: AsyncSession = Depends(get_db)) -> ProductDomain:
-    """Return a single ProductDomain by slug; 404 if not found."""
+@router.get("/{slug}", response_model=DomainDetail)
+async def by_slug(slug: str, session: AsyncSession = Depends(get_db)) -> DomainDetail:
+    """Return a single ProductDomain by slug with strategic themes; 404 if not found."""
     found = await get_domain_by_slug(session, slug)
     if found is None:
         raise HTTPException(status_code=404, detail=f"Domain '{slug}' not found")
-    return found
+    return DomainDetail(
+        id=found.id,
+        slug=found.slug,
+        name=found.name,
+        description=found.description,
+        jurisdiction_id=found.jurisdiction_id,
+        strategic_themes=list(found.strategic_themes),  # type: ignore[attr-defined]
+    )
 
 
 @router.get("/{slug}/products", response_model=list[Product])

@@ -2,6 +2,8 @@
 
 from datetime import datetime
 
+from sqlalchemy import text
+
 from app.models.jurisdiction import Jurisdiction
 from app.models.product import Product
 from app.models.product_domain import ProductDomain
@@ -94,3 +96,66 @@ async def test_consumed_products_returns_empty_list_when_none(client, fresh_sess
     resp = await client.get("/api/jurisdictions/jur-family/consumed-products")
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+async def _seed_consumed_products(fresh_session) -> None:
+    """Seed a jurisdiction that consumes a product from another jurisdiction's domain."""
+    async with fresh_session() as s:
+        j_origin = Jurisdiction(
+            id="j_jur_origin",
+            slug="jur-origin",
+            name="Jurisdictions Origin",
+            updated_at=datetime(2026, 1, 1),
+        )
+        j_consumer = Jurisdiction(
+            id="j_jur_civil2",
+            slug="jur-civil2",
+            name="Jurisdictions Civil2",
+            updated_at=datetime(2026, 1, 1),
+        )
+        d = ProductDomain(
+            id="d_jur_origin",
+            slug="jur-origin-domain",
+            name="Jurisdictions Origin Domain",
+            jurisdiction_id="j_jur_origin",
+            updated_at=datetime(2026, 1, 1),
+        )
+        t = Team(
+            id="t_jur_origin",
+            slug="jur-origin-team",
+            name="Jurisdictions Origin Team",
+            domain_id="d_jur_origin",
+            updated_at=datetime(2026, 1, 1),
+        )
+        p = Product(
+            id="p_jur_shared",
+            slug="jur-shared-product",
+            name="Jurisdictions Shared Product",
+            domain_id="d_jur_origin",
+            stage="live",
+            operating_team_id="t_jur_origin",
+            updated_at=datetime(2026, 1, 1),
+        )
+        s.add_all([j_origin, j_consumer, d, t, p])
+        await s.commit()
+        # Insert into Prisma implicit M2M table (A=Jurisdiction, B=Product).
+        await s.execute(
+            text(
+                'INSERT INTO "_ConsumedByJurisdiction" ("A", "B") VALUES (:jid, :pid)'
+            ),
+            {"jid": "j_jur_civil2", "pid": "p_jur_shared"},
+        )
+        await s.commit()
+
+
+async def test_consumed_products_includes_domain_slug_and_name(client, fresh_session):
+    await _seed_consumed_products(fresh_session)
+
+    resp = await client.get("/api/jurisdictions/jur-civil2/consumed-products")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    product = data[0]
+    assert product["slug"] == "jur-shared-product"
+    assert product["domain_slug"] == "jur-origin-domain"
+    assert product["domain_name"] == "Jurisdictions Origin Domain"

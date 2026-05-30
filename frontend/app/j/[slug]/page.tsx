@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Card } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { RoadmapMatrix } from "@/components/roadmap-matrix";
@@ -30,13 +31,14 @@ interface ApiProductDomain {
   jurisdiction_id: string;
 }
 
-interface ApiProduct {
+interface ApiConsumedProduct {
   id: string;
   slug: string;
   name: string;
   description?: string | null;
-  domain_id: string;
-  operating_team_id: string;
+  stage: string;
+  domain_slug: string;
+  domain_name: string;
 }
 
 interface ApiTeam {
@@ -148,7 +150,7 @@ export default async function JurisdictionPage({
   const [rawMatrix, domains, consumedHere] = await Promise.all([
     api.get<ApiMatrixBand[]>("/api/matrix"),
     api.get<ApiProductDomain[]>(`/api/jurisdictions/${slug}/domains`),
-    api.get<ApiProduct[]>(`/api/jurisdictions/${slug}/consumed-products`),
+    api.get<ApiConsumedProduct[]>(`/api/jurisdictions/${slug}/consumed-products`),
   ]);
 
   const rawBand = rawMatrix.find((b) => b.jurisdiction.slug === jurisdiction.slug);
@@ -237,6 +239,7 @@ export default async function JurisdictionPage({
             {consumedHere.map((p) => (
               <Link key={p.slug} href={`/p/${p.slug}`} className="group">
                 <Card className="h-full transition-colors group-hover:border-[var(--color-border-strong)]">
+                  <Eyebrow className="mb-1.5">From {p.domain_name}</Eyebrow>
                   <div className="text-[15px] font-medium text-[var(--color-ink)]">
                     {p.name}
                   </div>
