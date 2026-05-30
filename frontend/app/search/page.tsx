@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { search, searchCounts, type SearchEntityType } from "@/lib/search/search";
+import { getServerApiClient } from "@/lib/api-client-server";
 
 // Deep results page per requirements spec §5.7. Shown when the user
 // presses Enter on the search input or clicks "See all" in the
@@ -12,6 +12,28 @@ import { search, searchCounts, type SearchEntityType } from "@/lib/search/search
 // Entity-type filter chips along the top let the user narrow.
 
 export const dynamic = "force-dynamic";
+
+type SearchEntityType =
+  | "jurisdiction"
+  | "domain"
+  | "team"
+  | "product"
+  | "initiative";
+
+interface BackendSearchResult {
+  entityType: SearchEntityType;
+  id: string;
+  slug: string | null;
+  name: string;
+  description: string | null;
+  rank: number;
+  href: string | null;
+}
+
+interface BackendSearchResponse {
+  query: string;
+  results: BackendSearchResult[];
+}
 
 const ENTITY_LABELS: Record<SearchEntityType, string> = {
   jurisdiction: "Jurisdiction",
@@ -53,17 +75,51 @@ function parseTypes(
   return parsed.length > 0 ? parsed : undefined;
 }
 
+function countsByType(
+  results: BackendSearchResult[],
+): Record<SearchEntityType, number> {
+  const counts: Record<SearchEntityType, number> = {
+    jurisdiction: 0,
+    domain: 0,
+    team: 0,
+    product: 0,
+    initiative: 0,
+  };
+  for (const r of results) {
+    counts[r.entityType] = (counts[r.entityType] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export default async function SearchResultsPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const q = (first(params.q) ?? "").trim();
   const types = parseTypes(first(params.type));
 
-  const [results, counts] = q
-    ? await Promise.all([
-        search(q, { limit: 50, ...(types ? { types } : {}) }),
-        searchCounts(q),
-      ])
-    : [[], { jurisdiction: 0, domain: 0, team: 0, product: 0, initiative: 0 }];
+  let results: BackendSearchResult[] = [];
+  let counts: Record<SearchEntityType, number> = {
+    jurisdiction: 0,
+    domain: 0,
+    team: 0,
+    product: 0,
+    initiative: 0,
+  };
+
+  if (q) {
+    const api = await getServerApiClient();
+    const typeParam = types ? `&type=${types.join(",")}` : "";
+    // Fetch filtered results for display and all results for counts
+    const [filtered, all] = await Promise.all([
+      api.get<BackendSearchResponse>(
+        `/api/search?q=${encodeURIComponent(q)}&limit=50${typeParam}`,
+      ),
+      api.get<BackendSearchResponse>(
+        `/api/search?q=${encodeURIComponent(q)}&limit=200`,
+      ),
+    ]);
+    results = filtered.results;
+    counts = countsByType(all.results);
+  }
 
   return (
     <div className="mx-auto max-w-[1480px]">
