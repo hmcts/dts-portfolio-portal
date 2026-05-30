@@ -1,0 +1,23 @@
+{
+    auto_https off
+    admin off
+}
+
+:3000 {
+    route {
+        # API calls go to the backend service. Resolved via in-cluster DNS in
+        # K8s; via the docker-compose service name locally.
+        @backend path /api/*
+        handle @backend {
+            reverse_proxy {$PORTAL_BACKEND_URL:http://backend:8000} {
+                header_up Host {http.reverse_proxy.upstream.host}
+            }
+        }
+
+        # Everything else (pages, static assets, _next/*) goes to the
+        # Next.js standalone server on loopback.
+        handle {
+            reverse_proxy localhost:3001
+        }
+    }
+}

@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+*.test.ts
+*.test.tsx
+*.int.test.ts
+*.e2e.ts
+tests/
+playwright.config.ts
+vitest.config.ts
+vitest.int.config.ts
+vitest.setup.ts
+tsconfig.tsbuildinfo
