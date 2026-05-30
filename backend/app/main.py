@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api import health
+from app.api import activity, domains, health, jurisdictions, matrix, products, sidebar, teams
 
 app = FastAPI(
     title="DTS Portfolio Portal API",
@@ -12,3 +12,10 @@ app = FastAPI(
 )
 
 app.include_router(health.router)
+app.include_router(matrix.router)
+app.include_router(activity.router)
+app.include_router(sidebar.router)
+app.include_router(jurisdictions.router)
+app.include_router(domains.router)
+app.include_router(teams.router)
+app.include_router(products.router)
