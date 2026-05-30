@@ -149,7 +149,6 @@ Runs the production image instead of `pnpm dev`. Same image App Service runs in 
 | `cd frontend && pnpm format` | Prettier write |
 | `cd frontend && pnpm db:migrate:dev --name <slug>` | Create + apply a new Prisma migration |
 | `cd frontend && pnpm db:migrate:deploy` | Apply pending Prisma migrations (production-safe) |
-| `cd backend && uv run alembic current` | Show current Alembic migration state (once Group B lands) |
 | `cd frontend && pnpm db:seed` | Idempotent upsert seed data (Prisma-backed; stays until Group D cutover) |
 | `cd frontend && pnpm db:studio` | Prisma Studio (browse the DB in the browser) |
 
@@ -160,6 +159,7 @@ Runs the production image instead of `pnpm dev`. Same image App Service runs in 
 | `make backend-migrate` | Apply Alembic migrations (`alembic upgrade head`) |
 | `make backend-test` | pytest |
 | `make backend-lint` | Ruff check + format check |
+| `cd backend && uv run alembic current` | Show current Alembic migration state |
 
 ## Architecture in one paragraph
 
