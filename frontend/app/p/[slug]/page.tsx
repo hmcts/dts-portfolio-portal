@@ -8,13 +8,8 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { StatusPill } from "@/components/ui/status-pill";
-import {
-  getDomainBySlug,
-  getInitiativesForProduct,
-  getJurisdictionBySlug,
-  getProductBySlug,
-  getTeamBySlug,
-} from "@/lib/portal-data";
+import { getServerApiClient } from "@/lib/api-client-server";
+import { ApiError } from "@/lib/api-client";
 import type { ProductStage, TimeBucket } from "@/lib/entities";
 
 // Product page per requirements spec §5.6. Header + description +
@@ -38,36 +33,119 @@ const BUCKET_LABELS: Record<TimeBucket, string> = {
   LATER: "Acknowledged but unscheduled",
 };
 
+// --- API response shapes (snake_case from the Python backend) ---
+
+interface ApiOutboundLink {
+  id: string;
+  product_id: string;
+  label: string;
+  url: string;
+  position: number;
+}
+
+interface ApiProduct {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  stage: ProductStage;
+  domain_id: string;
+  operating_team_id: string;
+  outbound_links: ApiOutboundLink[];
+  consumed_by: string[];   // Jurisdiction slugs
+}
+
+interface ApiInitiative {
+  id: string;
+  product_id: string;
+  bucket: TimeBucket;
+  title: string;
+  description?: string | null;
+  outbound_url?: string | null;
+}
+
+interface ApiMatrixBand {
+  jurisdiction: { id: string; slug: string; name: string };
+  rows: Array<{
+    domain: { id: string; slug: string; name: string };
+  }>;
+}
+
+interface ApiTeam {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  contact?: string | null;
+}
+
 export default async function ProductPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
-  if (!product) {
-    notFound();
+  const api = await getServerApiClient();
+
+  let product: ApiProduct;
+  try {
+    product = await api.get<ApiProduct>(`/api/products/${slug}`);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) notFound();
+    throw err;
   }
-  const [domain, team, initiatives] = await Promise.all([
-    getDomainBySlug(product.domainSlug),
-    getTeamBySlug(product.operatingTeamSlug),
-    getInitiativesForProduct(product.id),
+
+  // Fetch initiatives and the matrix (for ID→slug resolution) in parallel.
+  const [initiatives, matrix] = await Promise.all([
+    api.get<ApiInitiative[]>(`/api/products/${slug}/initiatives`),
+    api.get<ApiMatrixBand[]>("/api/matrix"),
   ]);
-  const jurisdiction = domain
-    ? await getJurisdictionBySlug(domain.jurisdictionSlug)
+
+  // Build ID-to-info maps from the matrix.
+  const domainInfoById = new Map<
+    string,
+    { slug: string; name: string; jurisdictionSlug: string; jurisdictionName: string }
+  >();
+  for (const band of matrix) {
+    for (const row of band.rows) {
+      domainInfoById.set(row.domain.id, {
+        slug: row.domain.slug,
+        name: row.domain.name,
+        jurisdictionSlug: band.jurisdiction.slug,
+        jurisdictionName: band.jurisdiction.name,
+      });
+    }
+  }
+
+  const domainInfo = domainInfoById.get(product.domain_id);
+  const domain = domainInfo
+    ? { slug: domainInfo.slug, name: domainInfo.name }
     : undefined;
-  // Resolve the "consumed by" jurisdictions up-front so the JSX
-  // iteration below stays synchronous.
-  const consumedByJurisdictions = (
-    await Promise.all(
-      product.consumedBy.map(async (s) => await getJurisdictionBySlug(s)),
-    )
-  ).filter((j): j is NonNullable<typeof j> => j !== undefined);
-  const initiativesByBucket: Record<TimeBucket, typeof initiatives> = {
+  const jurisdiction = domainInfo
+    ? { slug: domainInfo.jurisdictionSlug, name: domainInfo.jurisdictionName }
+    : undefined;
+
+  // Fetch the operating team using the domain's team list.
+  let team: ApiTeam | undefined;
+  if (domainInfo) {
+    const domainTeams = await api.get<ApiTeam[]>(
+      `/api/domains/${domainInfo.slug}/teams`,
+    );
+    team = domainTeams.find((t) => t.id === product.operating_team_id);
+  }
+
+  // Group initiatives by bucket.
+  const initiativesByBucket: Record<TimeBucket, ApiInitiative[]> = {
     NOW: initiatives.filter((i) => i.bucket === "NOW"),
     NEXT: initiatives.filter((i) => i.bucket === "NEXT"),
     LATER: initiatives.filter((i) => i.bucket === "LATER"),
   };
+
+  // consumedBy and outboundLinks are now returned by the backend ProductDetail response.
+  const consumedBy: string[] = product.consumed_by ?? [];
+  const outboundLinks: { label: string; url: string }[] = (product.outbound_links ?? []).map(
+    (l) => ({ label: l.label, url: l.url }),
+  );
 
   return (
     <div className="mx-auto max-w-[1480px]">
@@ -87,7 +165,7 @@ export default async function ProductPage({
       <PageHeader
         eyebrow={`${jurisdiction?.name ?? "DTS"} · ${domain?.name ?? "Product"} · Product`}
         title={product.name}
-        lede={product.description}
+        lede={product.description ?? undefined}
         actions={
           <StatusPill
             tone={STAGE_TONE[product.stage]}
@@ -125,11 +203,11 @@ export default async function ProductPage({
         </div>
       </Section>
 
-      {product.outboundLinks.length > 0 ? (
+      {outboundLinks.length > 0 ? (
         <Section eyebrow="Outbound links" heading="Source-system links">
           <Card>
             <ul role="list" className="flex flex-wrap gap-2">
-              {product.outboundLinks.map((link) => (
+              {outboundLinks.map((link) => (
                 <li key={link.url}>
                   <a
                     href={link.url}
@@ -171,31 +249,26 @@ export default async function ProductPage({
                 <div className="text-[15px] font-medium text-[var(--color-ink)]">
                   {domain.name}
                 </div>
-                {domain.description ? (
-                  <p className="mt-1.5 text-[13px] text-[var(--color-muted)]">
-                    {domain.description}
-                  </p>
-                ) : null}
               </Card>
             </Link>
           ) : null}
         </div>
       </Section>
 
-      {product.consumedBy.length > 0 ? (
+      {consumedBy.length > 0 ? (
         <Section
           eyebrow="Consumed by"
-          heading={`Used by ${product.consumedBy.length} other ${product.consumedBy.length === 1 ? "Jurisdiction" : "Jurisdictions"}`}
+          heading={`Used by ${consumedBy.length} other ${consumedBy.length === 1 ? "Jurisdiction" : "Jurisdictions"}`}
         >
           <Card>
             <ul role="list" className="flex flex-wrap gap-2">
-              {consumedByJurisdictions.map((j) => (
-                <li key={j.slug}>
+              {consumedBy.map((jSlug) => (
+                <li key={jSlug}>
                   <Link
-                    href={`/j/${j.slug}`}
+                    href={`/j/${jSlug}`}
                     className="inline-flex items-center rounded-[var(--radius-pill)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-[13px] text-[var(--color-ink-soft)] hover:bg-[var(--color-surface-sunk)]"
                   >
-                    {j.name}
+                    {jSlug}
                   </Link>
                 </li>
               ))}

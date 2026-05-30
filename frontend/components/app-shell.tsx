@@ -1,4 +1,5 @@
-import { getSidebarJurisdictions } from "@/lib/portal-data";
+import { getServerApiClient } from "@/lib/api-client-server";
+import type { SidebarJurisdiction } from "@/lib/portal-data";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 
@@ -21,7 +22,8 @@ export async function AppShell({
 }: {
   children: React.ReactNode;
 }) {
-  const jurisdictions = await getSidebarJurisdictions();
+  const api = await getServerApiClient();
+  const jurisdictions = await api.get<SidebarJurisdiction[]>("/api/sidebar/jurisdictions");
   return (
     <div className="flex h-dvh w-dvw overflow-hidden bg-[var(--color-canvas)]">
       <Sidebar jurisdictions={jurisdictions} />

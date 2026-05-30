@@ -7,17 +7,21 @@ import AxeBuilder from "@axe-core/playwright";
 // reliability against the redirect); the integration tests cover
 // the approve mutation directly.
 
-test("Approvals list renders the seeded queue and detail page", async ({
-  page,
-}) => {
-  // Unique team name per run so multiple runs against the same DB
-  // don't ambiguate the .first() locator below.
-  const uniqueSuffix = Date.now().toString(36);
-  const teamName = `E2E Approval Team ${uniqueSuffix}`;
-  const fixtureMarker = `End-to-end test fixture ${uniqueSuffix}`;
+// Write-path port (I.8): the approval flow test relies on the upload
+// form being present. The form is disabled while the write-path is
+// re-platformed onto the Python backend. Re-enable when the write-path
+// port lands and restores the upload + approvals workflow.
+test.skip(
+  "Approvals list renders the seeded queue and detail page",
+  async ({ page }) => {
+    // Unique team name per run so multiple runs against the same DB
+    // don't ambiguate the .first() locator below.
+    const uniqueSuffix = Date.now().toString(36);
+    const teamName = `E2E Approval Team ${uniqueSuffix}`;
+    const fixtureMarker = `End-to-end test fixture ${uniqueSuffix}`;
 
-  await page.goto("/upload");
-  const md = `---
+    await page.goto("/upload");
+    const md = `---
 type: team
 name: ${teamName}
 domain: common-platform
@@ -31,34 +35,35 @@ ${fixtureMarker}.
 
 #e2e on Slack.
 `;
-  await page.getByLabel("Markdown content").fill(md);
-  await page.getByRole("button", { name: /Upload and parse/ }).click();
-  await expect(
-    page.getByText(/Submission queued/),
-  ).toBeVisible({ timeout: 10_000 });
+    await page.getByLabel("Markdown content").fill(md);
+    await page.getByRole("button", { name: /Upload and parse/ }).click();
+    await expect(
+      page.getByText(/Submission queued/),
+    ).toBeVisible({ timeout: 10_000 });
 
-  // List view
-  await page.goto("/approvals");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Pending submissions",
-  );
+    // List view
+    await page.goto("/approvals");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Pending submissions",
+    );
 
-  // Click into the detail — getByRole picks the link wrapping the
-  // list item, so we land on /approvals/[id] cleanly.
-  await page.getByRole("link", { name: new RegExp(teamName) }).click();
+    // Click into the detail — getByRole picks the link wrapping the
+    // list item, so we land on /approvals/[id] cleanly.
+    await page.getByRole("link", { name: new RegExp(teamName) }).click();
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(teamName);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(teamName);
 
-  // The fixture marker appears in both the source pane (raw markdown)
-  // and the parsed pane (JSON output). Either being visible is enough
-  // — both indicates the detail page rendered.
-  await expect(page.getByText(fixtureMarker).first()).toBeVisible();
+    // The fixture marker appears in both the source pane (raw markdown)
+    // and the parsed pane (JSON output). Either being visible is enough
+    // — both indicates the detail page rendered.
+    await expect(page.getByText(fixtureMarker).first()).toBeVisible();
 
-  // Approve action is present and enabled
-  await expect(
-    page.getByRole("button", { name: /Approve and publish/ }),
-  ).toBeEnabled();
-});
+    // Approve action is present and enabled
+    await expect(
+      page.getByRole("button", { name: /Approve and publish/ }),
+    ).toBeEnabled();
+  },
+);
 
 test("Approvals list page passes axe", async ({ page }) => {
   await page.goto("/approvals");

@@ -3,7 +3,9 @@ import AxeBuilder from "@axe-core/playwright";
 
 const PAGES = [
   { name: "Help", url: "/help", h1: "Templates for adding content" },
-  { name: "Upload", url: "/upload", h1: "Upload a markdown file" },
+  // Write-path port (I.8): /upload is temporarily unavailable; h1 changed.
+  // Re-enable and update h1 when the write-path port lands.
+  // { name: "Upload", url: "/upload", h1: "Upload a markdown file" },
 ];
 
 for (const page of PAGES) {

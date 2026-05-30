@@ -1,11 +1,12 @@
 """Jurisdictions API router."""
 
+from sqlalchemy import select
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.response_models import ConsumedProduct
 from app.db import get_db
 from app.models.jurisdiction import Jurisdiction
-from app.models.product import Product
 from app.models.product_domain import ProductDomain
 from app.repositories.jurisdictions import (
     get_domains_by_jurisdiction,
@@ -33,9 +34,28 @@ async def domains(
     return list(await get_domains_by_jurisdiction(session, slug))
 
 
-@router.get("/{slug}/consumed-products", response_model=list[Product])
+@router.get("/{slug}/consumed-products", response_model=list[ConsumedProduct])
 async def consumed_products(
     slug: str, session: AsyncSession = Depends(get_db)
-) -> list[Product]:
-    """Return Products consumed by the given Jurisdiction."""
-    return list(await get_products_consumed_by(session, slug))
+) -> list[ConsumedProduct]:
+    """Return Products consumed by the given Jurisdiction, enriched with domain info."""
+    products = list(await get_products_consumed_by(session, slug))
+    if not products:
+        return []
+    domain_ids = list({p.domain_id for p in products})
+    domain_rows = await session.execute(
+        select(ProductDomain).where(ProductDomain.id.in_(domain_ids))
+    )
+    domains_by_id = {d.id: d for d in domain_rows.scalars()}
+    return [
+        ConsumedProduct(
+            id=p.id,
+            slug=p.slug,
+            name=p.name,
+            description=p.description,
+            stage=p.stage,
+            domain_slug=domains_by_id[p.domain_id].slug,
+            domain_name=domains_by_id[p.domain_id].name,
+        )
+        for p in products
+    ]

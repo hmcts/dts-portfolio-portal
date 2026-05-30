@@ -5,7 +5,7 @@ from datetime import datetime
 from app.models.initiative import Initiative
 from app.models.jurisdiction import Jurisdiction
 from app.models.product import Product
-from app.models.product_domain import ProductDomain
+from app.models.product_domain import ProductDomain, StrategicTheme
 from app.models.team import Team
 
 
@@ -120,3 +120,63 @@ async def test_domain_initiatives_returns_grouped_by_bucket(client, fresh_sessio
     assert "LATER" in data
     assert len(data["NOW"]) == 1
     assert data["NOW"][0]["title"] == "Domains initiative"
+
+
+# --- strategic_themes in domain detail ---
+
+async def _seed_domain_with_themes(fresh_session) -> None:
+    """Seed a domain that has two strategic themes."""
+    async with fresh_session() as s:
+        j = Jurisdiction(
+            id="j_dom_themes",
+            slug="dom-themes-jur",
+            name="Domains Themes Jurisdiction",
+            updated_at=datetime(2026, 1, 1),
+        )
+        d = ProductDomain(
+            id="d_dom_themes",
+            slug="dom-with-themes",
+            name="Domains With Themes",
+            jurisdiction_id="j_dom_themes",
+            updated_at=datetime(2026, 1, 1),
+        )
+        th1 = StrategicTheme(
+            id="th_dom_1",
+            title="Reduce time to first hearing",
+            domain_id="d_dom_themes",
+            position=0,
+            updated_at=datetime(2026, 1, 1),
+        )
+        th2 = StrategicTheme(
+            id="th_dom_2",
+            title="Improve digital access for citizens",
+            description="Enable self-service journeys end-to-end.",
+            domain_id="d_dom_themes",
+            position=1,
+            updated_at=datetime(2026, 1, 1),
+        )
+        s.add_all([j, d, th1, th2])
+        await s.commit()
+
+
+async def test_domain_detail_includes_strategic_themes(client, fresh_session):
+    await _seed_domain_with_themes(fresh_session)
+
+    resp = await client.get("/api/domains/dom-with-themes")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["slug"] == "dom-with-themes"
+    assert isinstance(data["strategic_themes"], list)
+    assert len(data["strategic_themes"]) == 2
+    titles = {t["title"] for t in data["strategic_themes"]}
+    assert "Reduce time to first hearing" in titles
+    assert "Improve digital access for citizens" in titles
+
+
+async def test_domain_detail_empty_strategic_themes_when_none(client, fresh_session):
+    await _seed_full(fresh_session)
+
+    resp = await client.get("/api/domains/dom-common-platform")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["strategic_themes"] == []
