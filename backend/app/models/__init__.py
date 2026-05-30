@@ -8,3 +8,6 @@ from app.models.product import OutboundLink, Product  # noqa: F401
 from app.models.product_domain import ProductDomain, StrategicTheme  # noqa: F401
 from app.models.search_event import SearchEvent  # noqa: F401
 from app.models.team import Team  # noqa: F401
+
+# Relationship declarations — imported last to avoid circular imports.
+import app.models.relationships  # noqa: F401, E402
