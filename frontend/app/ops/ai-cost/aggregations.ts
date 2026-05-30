@@ -1,4 +1,4 @@
-import type { DailyParseMetric } from "@/lib/ai-parser/metrics";
+import type { DailyParseMetric } from "@/lib/types";
 
 // Pure aggregation helpers for the AI cost dashboard. Extracted from
 // `page.tsx` so they can be unit-tested in isolation — the page

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DailyParseMetric } from "@/lib/ai-parser/metrics";
+import type { DailyParseMetric } from "@/lib/types";
 import { buildDayRows, summarise } from "./aggregations";
 
 // Unit tests for the AI cost dashboard's pure aggregation helpers.

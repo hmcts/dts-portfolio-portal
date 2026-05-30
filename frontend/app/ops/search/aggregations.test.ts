@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DailySearchVolume } from "@/lib/search/analytics";
+import type { DailySearchVolume } from "@/lib/types";
 import { computeCtr, formatCtr, summariseVolume } from "./aggregations";
 
 // Unit tests for the /ops/search dashboard's pure aggregation

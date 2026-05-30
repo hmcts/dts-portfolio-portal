@@ -7,7 +7,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import type { ActivityEntry } from "@/lib/entities";
+import type { ActivityEntry } from "@/lib/types";
 
 // "Latest approved changes across DTS" feed per requirements spec §5.2.
 // Pulls from the audit log; each entry links back to the affected

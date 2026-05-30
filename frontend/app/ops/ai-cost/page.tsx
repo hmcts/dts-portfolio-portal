@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { getServerApiClient } from "@/lib/api-client-server";
 import { buildDayRows, summarise } from "./aggregations";
-import type { DailyParseMetric } from "@/lib/ai-parser/metrics";
+import type { DailyParseMetric } from "@/lib/types";
 
 // AI cost dashboard per Phase 2 task 2.13. Renders the last 14
 // days of AI parse activity broken down by source (Azure OpenAI vs

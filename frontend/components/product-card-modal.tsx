@@ -24,7 +24,7 @@ import type {
   ProductStage,
   Team,
   TimeBucket,
-} from "@/lib/entities";
+} from "@/lib/types";
 
 // Product card that opens as a slide-over Sheet per requirements
 // spec §6.2 (modal-as-detail). Preserves the parent page underneath;

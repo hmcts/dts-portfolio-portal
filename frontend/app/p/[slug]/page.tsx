@@ -10,7 +10,7 @@ import { Section } from "@/components/ui/section";
 import { StatusPill } from "@/components/ui/status-pill";
 import { getServerApiClient } from "@/lib/api-client-server";
 import { ApiError } from "@/lib/api-client";
-import type { ProductStage, TimeBucket } from "@/lib/entities";
+import type { ProductStage, TimeBucket } from "@/lib/types";
 
 // Product page per requirements spec §5.6. Header + description +
 // NOW/NEXT/LATER roadmap + outbound-links block + Operating Team card

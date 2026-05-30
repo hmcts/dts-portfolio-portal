@@ -1,6 +1,6 @@
 import matter from "gray-matter";
 import { z } from "zod";
-import { JurisdictionSlug } from "@/lib/entities";
+import { JurisdictionSlug } from "@/lib/types";
 
 // Markdown identity parser per requirements spec §7.1. Extracts the
 // strict YAML front-matter that every uploaded markdown file must

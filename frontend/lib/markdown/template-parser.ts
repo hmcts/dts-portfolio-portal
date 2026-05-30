@@ -1,5 +1,5 @@
 import { parseIdentity, type FrontMatter } from "./identity-parser";
-import type { TimeBucket } from "@/lib/entities";
+import type { TimeBucket } from "@/lib/types";
 
 // Strict-template body parser per requirements spec §7.5 — used as the
 // fallback path when the AI parser is unavailable. It only accepts the
