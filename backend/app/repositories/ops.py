@@ -111,7 +111,7 @@ async def get_search_events_summary(session: AsyncSession) -> SearchEventsSummar
             FROM "SearchEvent"
             WHERE "kind" = 'query'
               AND "resultCount" = 0
-              AND "createdAt" >= NOW() - (:days::int * INTERVAL '1 day')
+              AND "createdAt" >= NOW() - (:days * INTERVAL '1 day')
             GROUP BY "query"
             ORDER BY occurrences DESC, last_seen_at DESC
             LIMIT :limit
@@ -145,7 +145,7 @@ async def get_search_events_summary(session: AsyncSession) -> SearchEventsSummar
              AND c."createdAt" <= q."createdAt" + INTERVAL '5 minutes'
             WHERE q."kind" = 'query'
               AND q."resultCount" > 0
-              AND q."createdAt" >= NOW() - (:days::int * INTERVAL '1 day')
+              AND q."createdAt" >= NOW() - (:days * INTERVAL '1 day')
               AND c."id" IS NULL
             GROUP BY q."query"
             ORDER BY occurrences DESC, last_seen_at DESC
