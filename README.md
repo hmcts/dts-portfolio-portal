@@ -62,33 +62,46 @@ Optional helpers:
 
 OS support: macOS (Apple Silicon and Intel) and Linux are both routinely used. Windows works through WSL2 — run all commands inside the WSL shell, not PowerShell.
 
-### Quick start (one command)
+### Quick start
 
 ```bash
-pnpm demo
+make install                          # installs both halves
+docker compose up -d database         # bring up Postgres
+make backend-migrate                  # apply migrations (creates schema)
+make up                               # bring up all containers
 ```
 
-This wraps everything below into a single idempotent script: checks Docker, brings up the Postgres container (creating it if needed), installs deps if stale, applies migrations, starts the dev server, and prints a rundown of what's visible vs what's empty until you author content. See [`scripts/demo.sh`](scripts/demo.sh).
+Open <http://localhost:3000>.
+
+> **Note:** `make backend-migrate` (Alembic) becomes functional once the Python backend lands (Group B of the restack). Until then, use `cd frontend && pnpm db:migrate:deploy` to apply the Prisma migrations.
+
+### Working on one half
+
+| Half | Command | What it runs |
+|---|---|---|
+| Frontend | `cd frontend && pnpm dev` | Next.js dev server on :3000 |
+| Backend | `cd backend && uv run uvicorn app.main:app --reload --port 8000` | FastAPI dev server on :8000 (available once Group B lands) |
+| Frontend (demo) | `cd frontend && pnpm demo` | One-shot bring-up — Postgres + migrations + seed + dev server. See [`scripts/demo.sh`](scripts/demo.sh) |
 
 ### Setup (manual)
 
-If you'd rather run the steps yourself:
+If you'd rather run the steps yourself without `make`:
 
 ```bash
 # Install dependencies
-pnpm install
+cd frontend && pnpm install --frozen-lockfile && cd ..
 
 # Copy the example env and adjust if needed
 cp .env.example .env.local
 
 # Start Postgres in the background
-docker compose up -d db
+docker compose up -d database
 
-# Apply migrations (creates the schema in the local DB)
-pnpm db:migrate:deploy
+# Apply Prisma migrations (creates the schema in the local DB)
+cd frontend && pnpm db:migrate:deploy
 
 # Boot the Next.js dev server with HMR
-pnpm dev
+cd frontend && pnpm dev
 ```
 
 Open <http://localhost:3000>. The `/healthz` endpoint should return `{"status":"ok"}`.
@@ -110,22 +123,43 @@ Runs the production image instead of `pnpm dev`. Same image App Service runs in 
 
 ## Day-to-day commands
 
+### Aggregate (both halves)
+
 | Command | What it does |
 |---|---|
-| `pnpm demo` | One-shot local bring-up — Postgres + migrations + seed + dev server. See [`scripts/demo.sh`](scripts/demo.sh) |
-| `pnpm dev` | Next.js dev server with HMR on :3000 |
-| `pnpm build` | Production build (Next standalone output) |
-| `pnpm typecheck` | `tsc --noEmit` on the whole project |
-| `pnpm lint` | ESLint (via `next lint`) |
-| `pnpm test` | Vitest unit + component tests |
-| `pnpm test:watch` | Same, in watch mode |
-| `pnpm test:e2e` | Playwright end-to-end + axe a11y |
-| `pnpm format` | Prettier write |
-| `pnpm db:migrate:dev --name <slug>` | Create + apply a new migration |
-| `pnpm db:migrate:deploy` | Apply pending migrations (production-safe) |
-| `pnpm db:migrate:status` | Show pending vs applied migrations |
-| `pnpm db:seed` | Idempotent upsert of `src/lib/seed.ts` into Postgres |
-| `pnpm db:studio` | Prisma Studio (browse the DB in the browser) |
+| `make install` | Install all dependencies (frontend + backend) |
+| `make test` | Run all tests (frontend Vitest + backend pytest) |
+| `make lint` | Lint all code (frontend ESLint + backend Ruff) |
+| `make up` | Start all containers via Docker Compose |
+| `make down` | Stop all containers |
+| `make logs` | Tail Docker Compose logs |
+
+### Frontend (Next.js)
+
+| Command | What it does |
+|---|---|
+| `cd frontend && pnpm demo` | One-shot local bring-up — Postgres + migrations + seed + dev server. See [`scripts/demo.sh`](scripts/demo.sh) |
+| `cd frontend && pnpm dev` | Next.js dev server with HMR on :3000 |
+| `make frontend-build` | Production build (Next standalone output) |
+| `make frontend-typecheck` | `tsc --noEmit` on the whole project |
+| `make frontend-lint` | ESLint (via `next lint`) |
+| `make frontend-test` | Vitest unit + component tests |
+| `cd frontend && pnpm test:watch` | Vitest in watch mode |
+| `cd frontend && pnpm test:e2e` | Playwright end-to-end + axe a11y |
+| `cd frontend && pnpm format` | Prettier write |
+| `cd frontend && pnpm db:migrate:dev --name <slug>` | Create + apply a new Prisma migration |
+| `cd frontend && pnpm db:migrate:deploy` | Apply pending Prisma migrations (production-safe) |
+| `cd backend && uv run alembic current` | Show current Alembic migration state (once Group B lands) |
+| `cd frontend && pnpm db:seed` | Idempotent upsert seed data (Prisma-backed; stays until Group D cutover) |
+| `cd frontend && pnpm db:studio` | Prisma Studio (browse the DB in the browser) |
+
+### Backend (Python — available once Group B lands)
+
+| Command | What it does |
+|---|---|
+| `make backend-migrate` | Apply Alembic migrations (`alembic upgrade head`) |
+| `make backend-test` | pytest |
+| `make backend-lint` | Ruff check + format check |
 
 ## Architecture in one paragraph
 
