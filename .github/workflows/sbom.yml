@@ -11,6 +11,10 @@ on:
     - cron: '48 6 * * 4' # Thursday 06:48 UTC
   workflow_dispatch:
 
+defaults:
+  run:
+    working-directory: frontend
+
 permissions:
   contents: read
 
@@ -29,6 +33,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install (frozen, no scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -53,5 +58,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: sbom
-          path: sbom.cdx.json
+          path: frontend/sbom.cdx.json
           retention-days: 90

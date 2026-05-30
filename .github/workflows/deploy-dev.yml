@@ -12,8 +12,18 @@ name: Deploy Dev
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-dev.yml'
+      - '.github/workflows/ci-build-images.yml'
   push:
     branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-dev.yml'
+      - '.github/workflows/ci-build-images.yml'
   workflow_dispatch:
 
 permissions:
