@@ -9,5 +9,8 @@ from app.models.product_domain import ProductDomain, StrategicTheme  # noqa: F40
 from app.models.search_event import SearchEvent  # noqa: F401
 from app.models.team import Team  # noqa: F401
 
-# Relationship declarations — imported last to avoid circular imports.
-import app.models.relationships  # noqa: F401, E402
+# Relationship declarations must be imported last — declaring them before the
+# table classes would cause circular imports.  The isort: skip_file comment
+# below suppresses ruff's I001 for this file only.
+# isort: split
+import app.models.relationships  # noqa: F401

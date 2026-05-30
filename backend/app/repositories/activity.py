@@ -10,7 +10,7 @@ real PII, no internal stakeholder names).
 """
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.models.activity_entry import ActivityEntry
 
@@ -22,7 +22,7 @@ _SEED: tuple[ActivityEntry, ...] = (
         description="Added Java 21 upgrade chip to NOW.",
         kind="roadmap-update",
         approver="Priya Shah",
-        approved_at=datetime(2026, 5, 17, 9, 14, tzinfo=timezone.utc),
+        approved_at=datetime(2026, 5, 17, 9, 14, tzinfo=UTC),
     ),
     ActivityEntry(
         id="a-2",
@@ -31,7 +31,7 @@ _SEED: tuple[ActivityEntry, ...] = (
         description="Welsh-interpreter logic fix added to NEXT.",
         kind="new-chip",
         approver="Sam Wright",
-        approved_at=datetime(2026, 5, 16, 15, 20, tzinfo=timezone.utc),
+        approved_at=datetime(2026, 5, 16, 15, 20, tzinfo=UTC),
     ),
     ActivityEntry(
         id="a-3",
@@ -40,7 +40,7 @@ _SEED: tuple[ActivityEntry, ...] = (
         description="Sentence-type picker rewrite moved into NOW.",
         kind="stage-change",
         approver="Tom Frye",
-        approved_at=datetime(2026, 5, 14, 11, 2, tzinfo=timezone.utc),
+        approved_at=datetime(2026, 5, 14, 11, 2, tzinfo=UTC),
     ),
     ActivityEntry(
         id="a-4",
@@ -49,7 +49,7 @@ _SEED: tuple[ActivityEntry, ...] = (
         description="Postgres 17 upgrade added to NOW.",
         kind="roadmap-update",
         approver="Mo Khan",
-        approved_at=datetime(2026, 5, 10, 8, 0, tzinfo=timezone.utc),
+        approved_at=datetime(2026, 5, 10, 8, 0, tzinfo=UTC),
     ),
     ActivityEntry(
         id="a-5",
@@ -58,7 +58,7 @@ _SEED: tuple[ActivityEntry, ...] = (
         description="Edited 'Reduce platform sprawl'.",
         kind="theme-update",
         approver="Priya Shah",
-        approved_at=datetime(2026, 5, 9, 13, 30, tzinfo=timezone.utc),
+        approved_at=datetime(2026, 5, 9, 13, 30, tzinfo=UTC),
     ),
 )
 

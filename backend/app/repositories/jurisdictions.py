@@ -20,7 +20,7 @@ async def get_jurisdiction_counts(session: AsyncSession) -> dict[str, int]:
         .outerjoin(ProductDomain, ProductDomain.jurisdiction_id == Jurisdiction.id)
         .group_by(Jurisdiction.slug),
     )
-    return {slug: count for slug, count in result.all()}
+    return dict(result.all())
 
 
 async def get_jurisdiction_by_slug(session: AsyncSession, slug: str) -> Jurisdiction | None:
