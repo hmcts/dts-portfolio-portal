@@ -84,5 +84,37 @@ services:
       db:
         condition: service_healthy
 
+  # Multi-stage Caddy + supervisord container (Group G).
+  # Uses host port 3001 during the transition period while the legacy `app`
+  # service (profile-gated) still claims port 3000. Once `app` is retired in
+  # the cutover phase the frontend service port mapping will move to 3000:3000.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # BUILD_DATABASE_URL is required by `next build` for static prerendering.
+      # Build via: docker build --network host \
+      #   --build-arg BUILD_DATABASE_URL=postgresql://portal:portal@localhost:5432/portal \
+      #   frontend/
+      # then reference the pre-built image, or start `db` first and rebuild.
+      args:
+        VERSION: dev
+        PORTAL_BACKEND_URL: http://backend:8000
+    environment:
+      PORTAL_BACKEND_URL: http://backend:8000
+      DATABASE_URL: "postgresql://portal:portal@db:5432/portal"
+    ports:
+      - "3001:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
 volumes:
   portal-db-data:
