@@ -9,7 +9,7 @@ import { Section } from "@/components/ui/section";
 import { StatusPill } from "@/components/ui/status-pill";
 import { getServerApiClient } from "@/lib/api-client-server";
 import { ApiError } from "@/lib/api-client";
-import type { ProductStage } from "@/lib/entities";
+import type { ProductStage } from "@/lib/types";
 
 // Team page per requirements spec §5.5. Header + breadcrumb + About
 // block + Products operated + (Phase 2) latest activity from audit

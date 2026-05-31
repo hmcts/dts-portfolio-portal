@@ -1,4 +1,4 @@
-import type { DailySearchVolume } from "@/lib/search/analytics";
+import type { DailySearchVolume } from "@/lib/types";
 
 // Pure aggregation helpers for the /ops/search dashboard. Extracted
 // from page.tsx so they can be unit-tested in isolation.

@@ -12,7 +12,7 @@ import {
   SheetBody,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/cn";
-import type { Initiative, TimeBucket } from "@/lib/entities";
+import type { Initiative, TimeBucket } from "@/lib/types";
 
 // Initiative chip with a slide-over Sheet on click. The drawer
 // mirrors the standalone prototype's structure section-for-section:

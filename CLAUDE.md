@@ -17,6 +17,13 @@ Before executing any phase, refine its tasks into TDD-grade steps once the archi
 1. **High-altitude is non-negotiable.** The portal surfaces DTS at portfolio altitude. Operational detail belongs in Ardoq / Jira / Confluence — link to them, never duplicate them. Anything that looks like a KPI dashboard or Jira-ticket plumbing has gone wrong. A previous attempt failed precisely by going too deep too early; do not repeat that.
 2. **Architecture is locked at the design level.** The stack is decided in [`docs/superpowers/specs/2026-05-19-azure-stack-design.md`](docs/superpowers/specs/2026-05-19-azure-stack-design.md). Phase 0 ADRs ratify these decisions; they do not re-litigate them. Defer to the stack-design spec; if a new question genuinely arises that the spec doesn't answer, surface it and update the spec, don't quietly invent an answer.
 
+## Stack summary (post Group K cutover)
+
+- **Frontend**: Next.js App Router + TypeScript, standalone output, multi-stage Dockerfile.
+- **Backend**: FastAPI + Python 3.12+, SQLModel (Pydantic + SQLAlchemy 2.0) + Alembic. Owns all DB access; no Prisma.
+- **Containers**: two images (frontend + backend) + Caddy reverse proxy, managed in one Docker Compose file.
+- **Database**: Postgres. Migrations live in `backend/alembic/`. The `pnpm db:*` commands no longer exist.
+
 ## Engineering standards
 
 These hold across both repos (`dts-portfolio-portal` and `dts-portfolio-portal-infra`). When they conflict with default Claude behaviour, these win.
@@ -52,7 +59,7 @@ Untested code is not done. CI gates a coverage threshold; failing tests block me
 
 ### Two-repo topology
 
-- This repo (`hmcts/dts-portfolio-portal`) — **public** — carries the Next.js app, Prisma schema + migrations, Dockerfile, CI workflows, and docs.
+- This repo (`hmcts/dts-portfolio-portal`) — **public** — carries the Next.js frontend, FastAPI Python backend, Alembic migrations, Dockerfiles, CI workflows, and docs.
 - `hmcts/dts-portfolio-portal-infra` — **internal** — carries Terraform (`infrastructure/` + `platform/` roots) and the deploy workflows triggered via cross-repo `repository_dispatch`.
 - The cross-repo dispatch step is **gated by repo variable `INFRA_DISPATCH_ENABLED`**, default `false`. Flipping to `true` is a manual action once the Azure estate is provisioned.
 - Never put Terraform in the app repo. Never put app code in the infra repo.

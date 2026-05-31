@@ -1,9 +1,19 @@
 import { z } from "zod";
 
-// Entity model from requirements spec §4. Zod schemas double as the
-// runtime validation point and the source of truth for the inferred
-// TypeScript types. Mirrors prisma/schema.prisma but lives in app
-// code so the matching pages can consume seed JSON without a DB.
+// Consolidated type definitions for the DTS Portfolio Portal frontend.
+//
+// These were previously split across entities.ts (Zod schemas + inferred
+// types) and portal-data-seed.ts (matrix/sidebar interfaces). Both source
+// files are deleted in the Group K cutover; all consumers have been updated
+// to import from here instead.
+//
+// Zod schemas remain so that identity-parser.ts can do runtime validation
+// (JurisdictionSlug.safeParse / .parse). All other consumers use the
+// TypeScript types only.
+
+// ---------------------------------------------------------------------------
+// Primitives from requirements spec §4
+// ---------------------------------------------------------------------------
 
 export const TimeBucket = z.enum(["NOW", "NEXT", "LATER"]);
 export type TimeBucket = z.infer<typeof TimeBucket>;
@@ -26,6 +36,10 @@ export const JurisdictionSlug = z.enum([
   "administrative",
 ]);
 export type JurisdictionSlug = z.infer<typeof JurisdictionSlug>;
+
+// ---------------------------------------------------------------------------
+// Entity types
+// ---------------------------------------------------------------------------
 
 export const Initiative = z.object({
   id: z.string(),
@@ -116,3 +130,70 @@ export const PortalContent = z.object({
   activity: z.array(ActivityEntry),
 });
 export type PortalContent = z.infer<typeof PortalContent>;
+
+// ---------------------------------------------------------------------------
+// Matrix / roadmap display types (previously in portal-data-seed.ts)
+// ---------------------------------------------------------------------------
+
+// Matrix-shaped Initiative carries the parent Product's display name
+// and slug alongside the raw Initiative fields. Used by the detail
+// drawer opened from the roadmap matrix.
+export type MatrixInitiative = Initiative & {
+  productName: string;
+  productHref: string;
+};
+
+export interface MatrixCell {
+  bucket: TimeBucket;
+  initiatives: MatrixInitiative[];
+}
+
+export interface MatrixDomainRow {
+  domain: ProductDomain;
+  productCount: number;
+  cells: Record<TimeBucket, MatrixInitiative[]>;
+}
+
+export interface MatrixJurisdictionBand {
+  jurisdiction: Jurisdiction;
+  domainCount: number;
+  initiativeCount: number;
+  rows: MatrixDomainRow[];
+}
+
+// Sidebar data shape per Jurisdiction — every Jurisdiction with the
+// Domains underneath it.
+export interface SidebarJurisdiction {
+  slug: string;
+  name: string;
+  count: number;
+  domains: Array<{ slug: string; name: string }>;
+}
+
+// ---------------------------------------------------------------------------
+// Ops dashboard types (previously in write-path modules)
+// ---------------------------------------------------------------------------
+
+// DailySearchVolume was previously exported from lib/search/analytics.ts.
+// The ops/search dashboard imports only this type; the actual DB write-path
+// is unavailable during the write-path re-platform.
+export interface DailySearchVolume {
+  day: string;
+  queries: number;
+  clicks: number;
+}
+
+// DailyParseMetric was previously exported from lib/ai-parser/metrics.ts.
+// The ops/ai-cost dashboard imports only this type.
+export interface DailyParseMetric {
+  // ISO yyyy-mm-dd in UTC.
+  day: string;
+  source: string;
+  parseCount: number;
+  successCount: number;
+  failureCount: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  avgLatencyMs: number;
+}

@@ -22,7 +22,7 @@ import type {
   ProductDomain,
   ProductStage,
   Team,
-} from "@/lib/entities";
+} from "@/lib/types";
 
 // Team card that opens as a slide-over Sheet per requirements
 // spec §6.2 (modal-as-detail). Mirrors ProductCardModal — preserves

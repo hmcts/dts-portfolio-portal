@@ -17,7 +17,7 @@ import type {
   ProductDomain,
   ProductStage,
   Team,
-} from "@/lib/entities";
+} from "@/lib/types";
 
 // Product Domain page per requirements spec §5.4. Header + strategic
 // themes + Teams card grid + Products card grid. Filter strip is a

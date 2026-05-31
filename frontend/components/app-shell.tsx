@@ -1,5 +1,5 @@
 import { getServerApiClient } from "@/lib/api-client-server";
-import type { SidebarJurisdiction } from "@/lib/portal-data";
+import type { SidebarJurisdiction } from "@/lib/types";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 

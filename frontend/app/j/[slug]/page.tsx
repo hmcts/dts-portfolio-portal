@@ -8,7 +8,7 @@ import { Section } from "@/components/ui/section";
 import { RoadmapMatrix } from "@/components/roadmap-matrix";
 import { getServerApiClient } from "@/lib/api-client-server";
 import { ApiError } from "@/lib/api-client";
-import type { MatrixJurisdictionBand } from "@/lib/portal-data";
+import type { MatrixJurisdictionBand } from "@/lib/types";
 
 // Jurisdiction page per requirements spec §5.3. Header + this-
 // jurisdiction-only roadmap matrix + Domains card grid + consumed-by

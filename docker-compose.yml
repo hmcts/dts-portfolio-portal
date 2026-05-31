@@ -6,11 +6,7 @@
 #   docker compose --profile tools up -d pgadmin   # add pgAdmin on demand
 #
 # Full-container mode (the image the production host runs):
-#   docker compose --profile app up --build
-#
-# The `app` service is gated behind a profile so day-to-day dev uses
-# `pnpm dev` for HMR — the docker app service exists for parity smokes
-# and CI-equivalent local runs.
+#   docker compose up --build
 
 services:
   db:
@@ -67,44 +63,19 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VERSION: "0.0.0-dev"
-    container_name: portal-app
-    profiles: ["app"]
-    environment:
-      DATABASE_URL: "postgresql://portal:portal@db:5432/portal?schema=public"
-      NODE_ENV: production
-    ports:
-      - "3000:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-
-  # Multi-stage Caddy + supervisord container (Group G).
-  # Uses host port 3001 during the transition period while the legacy `app`
-  # service (profile-gated) still claims port 3000. Once `app` is retired in
-  # the cutover phase the frontend service port mapping will move to 3000:3000.
+  # Multi-stage Next.js + Caddy + supervisord container.
+  # Proxies all /api/* requests to the backend service.
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      # BUILD_DATABASE_URL is required by `next build` for static prerendering.
-      # Build via: docker build --network host \
-      #   --build-arg BUILD_DATABASE_URL=postgresql://portal:portal@localhost:5432/portal \
-      #   frontend/
-      # then reference the pre-built image, or start `db` first and rebuild.
       args:
         VERSION: dev
         PORTAL_BACKEND_URL: http://backend:8000
     environment:
       PORTAL_BACKEND_URL: http://backend:8000
-      DATABASE_URL: "postgresql://portal:portal@db:5432/portal"
     ports:
-      - "3001:3000"
+      - "3000:3000"
     depends_on:
       backend:
         condition: service_healthy

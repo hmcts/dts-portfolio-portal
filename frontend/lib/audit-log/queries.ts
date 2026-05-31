@@ -1,36 +1,20 @@
-import { db } from "@/lib/db";
+// Write-path audit-log queries — unavailable during the write-path
+// re-platform. The Prisma client has been removed in the Group K cutover.
 
-// Read-side queries over the Submission audit log. The write side is
-// in src/lib/audit-log/submission.ts; these are the helpers Phase 2
-// approval surfaces consume.
-
-export async function listPendingSubmissions() {
-  return db.submission.findMany({
-    where: { approvedAt: null },
-    orderBy: { submittedAt: "desc" },
-    select: {
-      id: true,
-      entityKind: true,
-      entityId: true,
-      submitter: true,
-      submittedAt: true,
-      sourceMarkdownSha: true,
-      versionNumber: true,
-      aiParsedOutput: true,
-      aiParseSource: true,
-    },
-  });
+export async function listPendingSubmissions(): Promise<never[]> {
+  throw new Error(
+    "Audit-log queries unavailable: Prisma client removed in Group K cutover.",
+  );
 }
 
-export async function getSubmissionById(id: string) {
-  return db.submission.findUnique({
-    where: { id },
-  });
+export async function getSubmissionById(_id: string): Promise<null> {
+  throw new Error(
+    "Audit-log queries unavailable: Prisma client removed in Group K cutover.",
+  );
 }
 
 // Convenience: derive the entity name from the parsed output's
-// front-matter shape. Used by the list view to show a friendly
-// label without re-parsing the source bytes.
+// front-matter shape. This is a pure function — no DB dependency.
 export function entityNameFromParsedOutput(
   parsedOutput: unknown,
 ): string | null {

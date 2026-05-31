@@ -7,7 +7,7 @@ import {
   Product,
   ProductDomain,
   Team,
-} from "./entities";
+} from "./types";
 
 // Zod's .default() splits the input and output types: a field with
 // `.default([])` is optional on the way in, present on the way out.
