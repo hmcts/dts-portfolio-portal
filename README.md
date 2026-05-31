@@ -52,6 +52,8 @@ You need these installed before the demo script (or the manual setup below) will
 | **Node.js** | 22.0.0 — pinned in `.nvmrc` and `engines.node` | `node --version` → `v22.x` |
 | **pnpm** | 10.0.0 — pinned via `packageManager` (`pnpm@10.4.1`) | `pnpm --version` |
 | **Docker** | any recent — Desktop, OrbStack, or Colima all work | `docker info` must succeed |
+| **Python** | 3.12+ — pinned in `backend/.python-version` and `backend/pyproject.toml` | `python3 --version` → `3.12.x` or newer |
+| **uv** | recent — Astral's Python package manager (the backend's lockfile is `backend/uv.lock`) | `uv --version` |
 | **Disk** | ~1.5 GB free for `node_modules` (~500 MB) + Postgres image (~250 MB) + Next/Playwright caches | |
 | **Ports** | `3000` (dev server) and `5432` (Postgres) must be free | `lsof -i :3000`, `lsof -i :5432` |
 
@@ -59,6 +61,8 @@ Optional helpers:
 
 - **`nvm` / `fnm` / `volta`** — pick up the `.nvmrc` automatically: `nvm use` or `fnm use`
 - **`corepack`** — ships with Node 22 and provisions the right pnpm version on first use: `corepack enable`
+- **`pyenv` / `mise`** — manage Python versions; `pyenv install` or `mise install` will pick up `backend/.python-version` automatically
+- **`uv`** (if not already installed) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - **`direnv`** — picks up the project-level `.envrc` automatically when you `cd` into the repo (the file is gitignored; it pins `DATABASE_URL` to the local container and unsets any inherited secrets)
 
 OS support: macOS (Apple Silicon and Intel) and Linux are both routinely used. Windows works through WSL2 — run all commands inside the WSL shell, not PowerShell.
@@ -74,13 +78,21 @@ make up                               # bring up all containers (backend + front
 
 Open <http://localhost:3000>.
 
+Alternatively, a one-shot:
+
+```bash
+cd frontend && pnpm demo
+```
+
+Does the same thing — brings up the full compose stack, applies migrations, polls `/api/health`, and prints the URL.
+
 ### Working on one half
 
 | Half | Command | What it runs |
 |---|---|---|
 | Frontend | `cd frontend && pnpm dev` | Next.js dev server on :3000 |
-| Backend | `cd backend && uv run uvicorn app.main:app --reload --port 8000` | FastAPI dev server on :8000 (available once Group B lands) |
-| Frontend (demo) | `cd frontend && pnpm demo` | One-shot bring-up — Postgres + migrations + seed + dev server. See [`scripts/demo.sh`](scripts/demo.sh) |
+| Backend | `cd backend && uv run uvicorn app.main:app --reload --port 8000` | FastAPI dev server on :8000 with auto-reload |
+| Frontend (demo) | `cd frontend && pnpm demo` | One-shot bring-up — docker compose stack (db + backend + frontend) + Alembic migrations + healthcheck loop. See [`scripts/demo.sh`](scripts/demo.sh) |
 
 ### Setup (manual)
 
@@ -105,7 +117,7 @@ cd backend && uv run uvicorn app.main:app --reload --port 8000 &
 cd frontend && pnpm dev
 ```
 
-Open <http://localhost:3000>. The `/healthz` endpoint should return `{"status":"ok"}`.
+Open <http://localhost:3000>. The `/api/health` endpoint should return `{"status":"ok"}`.
 
 ### Optional: pgAdmin
 
@@ -139,7 +151,7 @@ Runs the production images (frontend + backend + Caddy) instead of `pnpm dev`. S
 
 | Command | What it does |
 |---|---|
-| `cd frontend && pnpm demo` | One-shot local bring-up — Postgres + migrations + seed + dev server. See [`scripts/demo.sh`](scripts/demo.sh) |
+| `cd frontend && pnpm demo` | One-shot local bring-up of the full compose stack. See [`scripts/demo.sh`](scripts/demo.sh) |
 | `cd frontend && pnpm dev` | Next.js dev server with HMR on :3000 |
 | `make frontend-build` | Production build (Next standalone output) |
 | `make frontend-typecheck` | `tsc --noEmit` on the whole project |
@@ -149,7 +161,7 @@ Runs the production images (frontend + backend + Caddy) instead of `pnpm dev`. S
 | `cd frontend && pnpm test:e2e` | Playwright end-to-end + axe a11y |
 | `cd frontend && pnpm format` | Prettier write |
 
-### Backend (Python — available once Group B lands)
+### Backend (Python)
 
 | Command | What it does |
 |---|---|
