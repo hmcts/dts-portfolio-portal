@@ -33,7 +33,7 @@ jobs:
     outputs:
       version: ${{ steps.pick.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -92,7 +92,7 @@ jobs:
     if: github.event_name != 'pull_request' && vars.IMAGE_BUILD_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Download CHANGELOG
         uses: actions/download-artifact@v8

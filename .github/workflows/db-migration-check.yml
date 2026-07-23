@@ -38,7 +38,7 @@ jobs:
       DATABASE_URL: postgresql://portal:portal@localhost:5432/portal?schema=public
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
         with:
