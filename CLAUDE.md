@@ -66,6 +66,15 @@ Per the global `~/.claude/CLAUDE.md` secrets section, with project additions:
 - Runtime resolution is via the App Service user-assigned managed identity. No keys to leak because there are no keys.
 - `.env.example` only is committed; real `.env*` files are gitignored.
 
+### Working with subagents
+
+Subagents dispatched by the controlling Claude inherit every rule in this file. To avoid "discovery by reading", each implementer-subagent dispatch prompt restates the load-bearing constraints near the top:
+
+- Public-repo posture (the `### Code in the open` rules above) applies to every file, comment, commit, PR title, and fixture the subagent produces.
+- TDD discipline (`### Test-driven development`) — failing test before implementation; **hand-written stubs preferred over mocking frameworks** (vi.mock / unittest.mock / `MagicMock` chains) because mocks verify themselves while stubs verify the consumer against a real return shape.
+- Scope is the named task, no more. If a subagent finds work outside its task, it reports back to the controller for a separate dispatch rather than expanding the current one.
+- Every subagent returns to the controller at task end. The controller runs the two-stage review (spec compliance → code quality) before the next task starts. No silent merges; no parallel implementer dispatches against the same area.
+
 ## Markdown is canonical for content
 
 Per spec §7, entities (Domains, Teams, Products) are authored as markdown with strict YAML front-matter for identity and loose section bodies. AI translates loose markdown into structured fields; a human approves before publish. Source markdown is stored append-only as audit.
